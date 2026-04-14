@@ -18,7 +18,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
       color: kNavyBlue,
       buttonBackgroundColor: kNavyBlue,
       index: index,
-      height: MediaQuery.of(context).size.height * 0.05,
+      height: MediaQuery.of(context).size.height * 0.09,
       animationCurve: Curves.easeInOut,
       animationDuration: Duration(milliseconds: 800),
       items: <Widget>[

@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-
-import 'package:oceanic/presentation/features/home/view/login_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:oceanic/presentation/features/home/viewSample/auth_screen.dart';
-import 'package:oceanic/presentation/features/home/viewSample/login.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with TickerProviderStateMixin {
   late AnimationController _ringController;
   late Animation<double> _ringScale;
@@ -116,7 +115,6 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     // ── Detect current theme mode ──────────────────────────────
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    print(isDark);
 
     // ── Dynamic colors based on theme ─────────────────────────
     final bgGradientColors = isDark
@@ -157,11 +155,11 @@ class _SplashScreenState extends State<SplashScreen>
           children: [
             // Background glow — top right
             Positioned(
-              top: -80,
-              right: -80,
+              top: -80.r,
+              right: -80.r,
               child: Container(
-                width: 260,
-                height: 260,
+                width: 260.r,
+                height: 260.r,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
@@ -176,11 +174,11 @@ class _SplashScreenState extends State<SplashScreen>
 
             // Background glow — bottom left
             Positioned(
-              bottom: -100,
-              left: -60,
+              bottom: -100.r,
+              left: -60.r,
               child: Container(
-                width: 300,
-                height: 300,
+                width: 300.r,
+                height: 300.r,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
@@ -199,8 +197,8 @@ class _SplashScreenState extends State<SplashScreen>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   SizedBox(
-                    width: 160,
-                    height: 160,
+                    width: 160.r,
+                    height: 160.r,
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
@@ -212,8 +210,8 @@ class _SplashScreenState extends State<SplashScreen>
                             child: Transform.scale(
                               scale: _ringScale.value,
                               child: Container(
-                                width: 100,
-                                height: 100,
+                                width: 100.r,
+                                height: 100.r,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   border: Border.all(
@@ -234,8 +232,8 @@ class _SplashScreenState extends State<SplashScreen>
                             child: Transform.scale(
                               scale: _logoScale.value,
                               child: Container(
-                                width: 500,
-                                height: 500,
+                                width: 500.r,
+                                height: 500.r,
                                 // decoration: BoxDecoration(
                                 //   shape: BoxShape.circle,
                                 //   gradient: LinearGradient(
@@ -285,16 +283,16 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
 
-                  const SizedBox(height: 10),
+                 10.verticalSpace,
 
                   FadeTransition(
                     opacity: _taglineOpacity,
                     child: Text(
                       'Access quality healthcare services',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 13.sp,
                         color: taglineColor,
-                        letterSpacing: 3,
+                        letterSpacing: 3.r,
                         fontWeight: FontWeight.w400,
                       ),
                     ),

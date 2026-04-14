@@ -18,6 +18,7 @@ class UserProvider extends AsyncNotifier<UserModel?> {
     required String memberId,
     required String password,
     required String confirmPassword,
+    required String username,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
@@ -25,6 +26,7 @@ class UserProvider extends AsyncNotifier<UserModel?> {
         memberId: memberId,
         password: password,
         confirmPassword: confirmPassword,
+        username: username,
       );
     });
   }
@@ -35,7 +37,7 @@ class UserProvider extends AsyncNotifier<UserModel?> {
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      final token = await AuthService().login(
+      final token = await authService.login(
         memberId: memberId,
         password: password,
       );

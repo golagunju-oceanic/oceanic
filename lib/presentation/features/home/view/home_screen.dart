@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:oceanic/core/constants/app_colors.dart';
 import 'package:oceanic/data/repositories/providers/user_provider.dart';
-// import 'package:oceanic/presentation/features/auth/view/auth_screen.dart';
+import 'package:oceanic/presentation/features/home/view/authorization_screen.dart';
+import 'package:oceanic/presentation/features/home/view/policy_details.dart';
 import 'package:oceanic/presentation/features/home/view/telemedicine.dart';
-import 'package:oceanic/presentation/features/home/viewSample/auth_screen.dart';
 import 'package:oceanic/presentation/widgets/bottom_nav_bar.dart';
+import 'package:oceanic/presentation/widgets/drawer.dart';
+import 'package:oceanic/presentation/widgets/floating_app_bar.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -15,24 +17,34 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  int _currentBanner = 1;
+  int _currentBanner = 0;
 
-  // final List<Map<String, String>> _banners = [
-  //   {
-  //     'title': 'Welcome to Oceanic',
-  //     'subtitle': 'Our plans are designed to meet all segments of the society',
-  //   },
-  //   {
-  //     'title': 'At Oceanic HMO',
-  //     'subtitle':
-  //         'We deliver exceptional, personalized healthcare services with empathy, integrity, and expertise improving lives and fostering a culture of wellness.',
-  //   },
-  //   {
-  //     'title': 'Your Health Matters',
-  //     'subtitle':
-  //         'Access quality healthcare services at your fingertips, anytime.',
-  //   },
-  // ];
+  final ScrollController _scrollController = ScrollController();
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  final List<Map<String, String>> _banners = [
+    {
+      'title': 'Welcome to Oceanic',
+      'subtitle': 'Our plans are designed to meet all segments of the society',
+      'image': 'assets/images/banner1.jpg',
+    },
+    {
+      'title': 'At Oceanic HMO',
+      'subtitle':
+          'We provide personalized, high-quality healthcare with empathy and integrity to improve lives and promote wellness',
+      'image': 'assets/images/banner2.jpg',
+    },
+    {
+      'title': 'Your Health Matters',
+      'subtitle':
+          'Access quality healthcare services at your fingertips, anytime.',
+      'image': 'assets/images/banner3.jpg',
+    },
+  ];
 
   final List<Map<String, dynamic>> _menuItems = [
     {
@@ -40,165 +52,150 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       'title': 'Policy Details',
       'subtitle': 'View your health policy',
       'color': Color(0xFF6B5CE7),
+      'route': const PolicyDetailsScreen(),
     },
     {
       'icon': Icons.assignment_outlined,
       'title': 'Authorizations',
       'subtitle': 'View your treatment details',
       'color': Color(0xFF6B5CE7),
+      'route': const AuthorizationScreen(),
     },
     {
       'icon': Icons.medical_information_outlined,
       'title': 'Health Records',
       'subtitle': 'View your health records',
       'color': Color(0xFFE57373),
+      'route': const PolicyDetailsScreen(),
     },
     {
       'icon': Icons.video_call_outlined,
       'title': 'Telemedicine',
       'subtitle': 'Virtual consultation with a Doctor',
       'color': Color(0xFF42A5F5),
+      'route': const PolicyDetailsScreen(),
     },
     {
       'icon': Icons.medication_outlined,
       'title': 'Medication Request',
       'subtitle': 'Request your medication',
       'color': Color(0xFF66BB6A),
+      'route': const TelemedicineConsentScreen(),
     },
     {
       'icon': Icons.find_in_page_outlined,
       'title': 'Find a Provider',
       'subtitle': 'Locate healthcare providers',
       'color': Color(0xFFFFA726),
+      'route': const PolicyDetailsScreen(),
     },
   ];
-
-  // void logout() async {
-  //   await ref.read(authAsyncProvider.notifier).logout();
-  //   if (!mounted) return;
-  //   Navigator.pushReplacement(
-  //     context,
-  //     MaterialPageRoute(builder: (_) => const AuthScreen()),
-  //   );
-  // }
 
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(authAsyncProvider);
-
+    final screenHeight = MediaQuery.of(context).size.height;
+    final topPadding = MediaQuery.of(context).padding.top;
     return Container(
       color: kNavyBlue,
-      child: SafeArea(
-        child: Scaffold(
-          endDrawer: Drawer(),
-          appBar: AppBar(
-            backgroundColor: kNavyBlue,
-            title: userAsync.when(
-              loading: () => const Text(
-                'Loading...',
-                style: TextStyle(color: Colors.white),
-              ),
-              error: (_, __) => const Text(
-                'Hello User',
-                style: TextStyle(color: Colors.white),
-              ),
-              data: (user) => Text(
-                // '',
-                'Hello ${user?.username ?? 'User'}',
-                style: const TextStyle(color: Colors.white),
-              ),
-            ),
-            actions: [
-              // IconButton(
-              //   icon: const Icon(Icons.logout, color: Colors.white),
-              //   onPressed: (){},
-              // ),
-            ],
-          ),
-          backgroundColor: Colors.white,
-          body: userAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => Center(child: Text(error.toString())),
-            data: (user) => Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                          child: Text(
-                            'Sustaining your peace',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w500,
+      child: Column(
+        children: [
+          Container(color: Colors.white, height: topPadding),
+          Expanded(
+            child: Scaffold(
+              endDrawer: CustomDrawer(),
+              backgroundColor: Colors.white,
+              body: userAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, _) => Center(child: Text(error.toString())),
+                data: (user) => Stack(
+                  children: [
+                    SingleChildScrollView(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.only(top: 80),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                            child: Text(
+                              'Sustaining your peace',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
-                        ),
-                        SizedBox(
-                          height: 200,
-                          // child: Stack(
-                          //   children: [
-                          //     PageView.builder(
-                          //       itemCount: _banners.length,
-                          //       onPageChanged: (i) =>
-                          //           setState(() => _currentBanner = i),
-                          //       itemBuilder: (_, i) =>
-                          //           _buildBanner(_banners[i]),
-                          //     ),
-                          //     Positioned(
-                          //       bottom: 8,
-                          //       left: 0,
-                          //       right: 0,
-                          //       child: Row(
-                          //         mainAxisAlignment: MainAxisAlignment.center,
-                          //         children: List.generate(
-                          //           _banners.length,
-                          //           (i) => Container(
-                          //             margin: const EdgeInsets.symmetric(
-                          //               horizontal: 3,
-                          //             ),
-                          //             width: _currentBanner == i ? 10 : 8,
-                          //             height: _currentBanner == i ? 10 : 8,
-                          //             decoration: BoxDecoration(
-                          //               shape: BoxShape.circle,
-                          //               color: _currentBanner == i
-                          //                   ? kNavyBlue
-                          //                   : Colors.grey.shade400,
-                          //             ),
-                          //           ),
-                          //         ),
-                          //       ),
-                          //     ),
-                          //   ],
-                          // ),
-                        ),
-                        const SizedBox(height: 16),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Column(
-                            children: _menuItems
-                                .map((item) => _buildMenuItem(context, item))
-                                .toList(),
+                          SizedBox(
+                            height: screenHeight * 0.25,
+                            child: Stack(
+                              children: [
+                                PageView.builder(
+                                  itemCount: _banners.length,
+                                  onPageChanged: (i) =>
+                                      setState(() => _currentBanner = i),
+                                  itemBuilder: (_, i) =>
+                                      _buildBanner(_banners[i], screenHeight),
+                                ),
+                                Positioned(
+                                  bottom: 8,
+                                  left: 0,
+                                  right: 0,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: List.generate(
+                                      _banners.length,
+                                      (i) => Container(
+                                        margin: const EdgeInsets.symmetric(
+                                          horizontal: 3,
+                                        ),
+                                        width: _currentBanner == i ? 10 : 8,
+                                        height: _currentBanner == i ? 10 : 8,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: _currentBanner == i
+                                              ? kNavyBlue
+                                              : Colors.grey.shade400,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
+                          const SizedBox(height: 16),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Column(
+                              children: _menuItems
+                                  .map((item) => _buildMenuItem(context, item))
+                                  .toList(),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      ),
                     ),
-                  ),
+
+                    // --- Floating App Bar ---
+                    FloatingAppBar(
+                      scrollController: _scrollController,
+                      username: user?.username ?? 'User',
+                    ),
+                  ],
                 ),
-              ],
+              ),
+              bottomNavigationBar: CustomBottomNavBar(),
             ),
           ),
-          bottomNavigationBar: CustomBottomNavBar(),
-        ),
+          // Container(color: kNavyBlue, height: bottomPadding),
+        ],
       ),
     );
   }
 
-  // keep your existing _buildBanner and _buildMenuItem methods unchanged
-  Widget _buildBanner(Map<String, String> banner) {
+  Widget _buildBanner(Map<String, String> banner, double screenHeight) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
@@ -210,8 +207,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              gradient: LinearGradient(
-                colors: [Colors.blueGrey.shade400, Colors.blueGrey.shade600],
+              image: DecorationImage(
+                image: Image.asset(banner['image']!).image,
+                fit: BoxFit.cover,
+                colorFilter: ColorFilter.mode(
+                  Colors.black.withOpacity(0.3),
+                  BlendMode.darken,
+                ),
               ),
             ),
           ),
@@ -225,17 +227,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: const Icon(Icons.public, color: kNavyBlue, size: 28),
+              child: Image.asset(
+                'assets/images/logo.png',
+                width: 24,
+                height: 24,
+              ),
             ),
           ),
           Positioned(
             left: 12,
-            top: 30,
+            top: screenHeight * 0.09,
             child: Container(
               constraints: const BoxConstraints(maxWidth: 230),
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: kAmber,
+                color: kTeal.withOpacity(0.8),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
@@ -265,13 +271,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildMenuItem(BuildContext context, Map<String, dynamic> item) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withOpacity(0.2),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -279,12 +285,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       child: ListTile(
         onTap: () {
-          if (item['title'] == 'Telemedicine') {
+          final destination = item['route'] as Widget?;
+          if (destination != null) {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => const TelemedicineConsentScreen(),
-              ),
+              MaterialPageRoute(builder: (_) => destination),
             );
           }
         },
@@ -315,3 +320,69 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 }
+
+// --- Reusable floating bar action button ---
+// class _FloatingNavAction extends StatelessWidget {
+//   final IconData icon;
+//   final bool isScrolled;
+//   final VoidCallback onTap;
+//   final int badgeCount;
+
+//   const _FloatingNavAction({
+//     required this.icon,
+//     required this.isScrolled,
+//     required this.onTap,
+//     this.badgeCount = 0,
+//   });
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return GestureDetector(
+//       onTap: onTap,
+//       child: Stack(
+//         clipBehavior: Clip.none,
+//         children: [
+//           AnimatedContainer(
+//             duration: const Duration(milliseconds: 200),
+//             width: 36,
+//             height: 36,
+//             decoration: BoxDecoration(
+//               color: isScrolled
+//                   ? Colors.white.withOpacity(0.15)
+//                   : kNavyBlue.withOpacity(0.08),
+//               borderRadius: BorderRadius.circular(10),
+//             ),
+//             child: Icon(
+//               icon,
+//               color: isScrolled ? Colors.white : kNavyBlue,
+//               size: 20,
+//             ),
+//           ),
+//           if (badgeCount > 0)
+//             Positioned(
+//               top: -4,
+//               right: -4,
+//               child: Container(
+//                 width: 16,
+//                 height: 16,
+//                 decoration: const BoxDecoration(
+//                   color: Color(0xFFE74C3C),
+//                   shape: BoxShape.circle,
+//                 ),
+//                 child: Center(
+//                   child: Text(
+//                     '$badgeCount',
+//                     style: const TextStyle(
+//                       color: Colors.white,
+//                       fontSize: 9,
+//                       fontWeight: FontWeight.bold,
+//                     ),
+//                   ),
+//                 ),
+//               ),
+//             ),
+//         ],
+//       ),
+//     );
+//   }
+// }

@@ -5,6 +5,7 @@ import 'package:oceanic/core/utils/utils.dart';
 import 'package:oceanic/data/repositories/providers/user_provider.dart';
 import 'package:oceanic/presentation/features/home/view/home_screen.dart';
 import 'package:oceanic/presentation/features/home/viewSample/forgot_password.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:oceanic/presentation/features/home/viewmodel/auth_screen_provider.dart';
 import 'package:oceanic/presentation/widgets/background_image.dart';
 
@@ -18,6 +19,7 @@ class AuthScreen extends ConsumerStatefulWidget {
 class _AuthScreenState extends ConsumerState<AuthScreen> {
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController memberIdController = TextEditingController();
+  final TextEditingController usernameController = TextEditingController();
   final TextEditingController confirmPasswordController =
       TextEditingController();
 
@@ -32,7 +34,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 
   void signUpUser() {
-    if (memberIdController.text.isEmpty || passwordController.text.isEmpty) {
+    if (memberIdController.text.isEmpty ||
+        passwordController.text.isEmpty ||
+        usernameController.text.isEmpty ||
+        confirmPasswordController.text.isEmpty) {
       showSnackBar(context, 'Please fill in all fields');
       return;
     }
@@ -48,6 +53,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           memberId: memberIdController.text.trim(),
           password: passwordController.text.trim(),
           confirmPassword: confirmPasswordController.text.trim(),
+          username: usernameController.text.trim(),
         );
   }
 
@@ -72,11 +78,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     final viewModel = ref.read(authProvider.notifier);
 
     ref.listen(authAsyncProvider, (previous, next) {
+      if (!_isActionTriggered) return;
+      if (previous == null || !previous.isLoading) return;
       // Show Error
       if (next.hasError) {
         _isActionTriggered = false; // Reset on error
         showSnackBar(context, next.error.toString());
-        // print(next.stackTrace);
+        print(next.stackTrace);
       }
 
       if (!next.isLoading && !next.hasError && _isActionTriggered) {
@@ -112,15 +120,15 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               ),
               child: Column(
                 children: [
-                  const SizedBox(height: 90),
+                  SizedBox(height: 90.h),
                   // Image.asset(
                   //   'assets/images/logo.png',
-                  //   height: 80,
+                  //   height: 80.h,
                   //   fit: BoxFit.contain,
                   // ),
-                  const SizedBox(height: 40),
+                  SizedBox(height: 40.h),
                   _buildToggleButtonSwitch(state, viewModel),
-                  const SizedBox(height: 40),
+                  SizedBox(height: 40.h),
 
                   // Animated cross-fade between Sign Up and Login
                   AnimatedCrossFade(
@@ -156,12 +164,16 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   Widget _buildToggleButtonSwitch(AuthState state, AuthViewModel viewModel) {
     return Container(
-      width: 250,
+      width: 250.w,
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: const [
-          BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+        borderRadius: BorderRadius.circular(30.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 4.r,
+            offset: Offset(0, 2.h),
+          ),
         ],
       ),
       child: Row(
@@ -177,18 +189,21 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 foregroundColor: state.isLoginView ? Colors.white : kNavyBlue,
                 elevation: 0,
                 shadowColor: Colors.transparent,
-                shape: const RoundedRectangleBorder(
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.horizontal(
-                    left: Radius.circular(30),
+                    left: Radius.circular(30.r),
                   ),
                 ),
               ),
               onPressed: () => viewModel.setLoginView(true),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(vertical: 14.0),
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 14.h),
                 child: Text(
                   'LOGIN',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -237,8 +252,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     return Column(
       children: [
         CustomTextField(
-          hint: 'Member ID',
+          hint: 'Full Name',
           prefixIcon: Icons.person,
+          controller: usernameController,
+        ),
+        CustomTextField(
+          hint: 'Member ID',
+          prefixIcon: Icons.numbers,
           controller: memberIdController,
         ),
         CustomTextField(
@@ -263,7 +283,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.black.withOpacity(0.6),
-              fontSize: 10,
+              fontSize: 10.sp,
             ),
           ),
         ),
@@ -282,7 +302,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             onPressed: viewModel.toggleConfirmPassword,
           ),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: 20.h),
 
         // Verification Radio Buttons
         Text(
@@ -290,7 +310,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           style: TextStyle(
             color: kLightPrimary,
             fontWeight: FontWeight.bold,
-            fontSize: 15,
+            fontSize: 15.sp,
           ),
         ),
         Row(
@@ -313,28 +333,28 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             const Text('SMS', style: TextStyle(color: Colors.black87)),
           ],
         ),
-        const SizedBox(height: 30),
+        SizedBox(height: 30.h),
 
         // Sign Up Button
         SizedBox(
-          width: 150,
-          height: 45,
+          width: 150.w,
+          height: 45.h,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: kLightPrimary,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(4.r),
               ),
             ),
             onPressed: authAsync is AsyncLoading ? null : signUpUser,
             child: authAsync is AsyncLoading
                 ? const CircularProgressIndicator(color: Colors.white)
-                : const Text(
+                : Text(
                     'SIGN UP',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 16.sp,
                     ),
                   ),
           ),
@@ -390,25 +410,25 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               style: TextStyle(
                 color: kLightPrimary,
                 fontWeight: FontWeight.bold,
-                fontSize: 12,
+                fontSize: 12.sp,
               ),
             ),
           ),
         ),
-        const SizedBox(height: 30),
+        SizedBox(height: 30.h),
 
         // Login & Fingerprint Row
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(
-              width: 100,
-              height: 50,
+              width: 100.w,
+              height: 50.h,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: kLightPrimary,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
                 ),
                 onPressed: authAsync is AsyncLoading ? null : loginUser,
@@ -428,11 +448,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
             // Fingerprint Button
             Container(
-              width: 50,
-              height: 50,
+              width: 50.w,
+              height: 50.h,
               decoration: BoxDecoration(
                 color: kLightPrimary,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(8.r),
               ),
               child: IconButton(
                 icon: const Icon(Icons.fingerprint, color: Colors.white),
@@ -442,7 +462,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           ],
         ),
 
-        const SizedBox(height: 60),
+        SizedBox(height: 60.h),
 
         // Footer Logo (ATCA PLANS)
         // Column(
@@ -503,25 +523,29 @@ class CustomTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(6),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+        borderRadius: BorderRadius.circular(6.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 4.r,
+            offset: Offset(0, 2.h),
+          ),
         ],
       ),
       child: TextField(
         controller: controller,
         obscureText: obscureText,
-        style: const TextStyle(fontSize: 14),
+        style: TextStyle(fontSize: 14.sp),
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(color: Colors.grey.shade400),
           prefixIcon: Icon(prefixIcon, color: const Color(0xFF4A368C)),
           suffixIcon: suffixIcon,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 16),
+          contentPadding: EdgeInsets.symmetric(vertical: 16.h),
         ),
       ),
     );

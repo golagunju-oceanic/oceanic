@@ -26,6 +26,7 @@ class AuthService {
     required String memberId,
     required String password,
     required String confirmPassword,
+    required String username,
   }) async {
     final res = await http.post(
       Uri.parse('${Constants.uri}/api/auth/register'),
@@ -33,6 +34,7 @@ class AuthService {
         'memberId': memberId,
         'password': password,
         'confirmPassword': confirmPassword,
+        'username': username,
       }),
       headers: {'Content-Type': 'application/json; charset=UTF-8'},
     );
@@ -54,9 +56,9 @@ class AuthService {
       headers: {'Content-Type': 'application/json; charset=UTF-8'},
     );
     final body = jsonDecode(res.body);
-    // if (res.statusCode != 200) {
-    //   throw Exception(body['message']);
-    // }
+    if (res.statusCode != 200) {
+      throw Exception(body['message']);
+    }
     if (body['token'] == null) {
       throw Exception('Token not returned from server');
     }
