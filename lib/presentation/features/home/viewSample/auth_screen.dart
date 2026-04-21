@@ -8,6 +8,7 @@ import 'package:oceanic/presentation/features/home/viewSample/forgot_password.da
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:oceanic/presentation/features/home/viewmodel/auth_screen_provider.dart';
 import 'package:oceanic/presentation/widgets/background_image.dart';
+import 'package:oceanic/presentation/widgets/bottom_nav_bar.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -93,7 +94,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         if (state.isLoginView) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            MaterialPageRoute(builder: (context) => const CustomBottomNavBar()),
           );
         } else {
           showSnackBar(context, 'Account created, proceed to login');
@@ -113,22 +114,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
           // Main Content Layer
           SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 20.0,
-              ),
+            child: Container(
+              margin: EdgeInsets.symmetric(horizontal: 24.w),
               child: Column(
                 children: [
-                  SizedBox(height: 90.h),
+                  SizedBox(height: 70.h),
+
                   // Image.asset(
                   //   'assets/images/logo.png',
                   //   height: 80.h,
                   //   fit: BoxFit.contain,
                   // ),
-                  SizedBox(height: 40.h),
                   _buildToggleButtonSwitch(state, viewModel),
-                  SizedBox(height: 40.h),
+                  SizedBox(height: 20.h),
 
                   // Animated cross-fade between Sign Up and Login
                   AnimatedCrossFade(
@@ -152,6 +150,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         ? CrossFadeState.showSecond
                         : CrossFadeState.showFirst,
                     duration: const Duration(milliseconds: 300),
+                  ),
+
+                  SizedBox(height: 20.h),
+                  Image.asset(
+                    'assets/images/atca.png',
+                    height: 80.h,
+                    fit: BoxFit.contain,
                   ),
                 ],
               ),
@@ -226,11 +231,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 ),
               ),
               onPressed: () => viewModel.setLoginView(false),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(vertical: 14.0),
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 14.h),
                 child: Text(
                   'SIGN UP',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -302,7 +310,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             onPressed: viewModel.toggleConfirmPassword,
           ),
         ),
-        SizedBox(height: 20.h),
+        SizedBox(height: 10.h),
 
         // Verification Radio Buttons
         Text(
@@ -333,12 +341,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             const Text('SMS', style: TextStyle(color: Colors.black87)),
           ],
         ),
-        SizedBox(height: 30.h),
+        SizedBox(height: 10.h),
 
         // Sign Up Button
         SizedBox(
           width: 150.w,
-          height: 45.h,
+          height: 30.h,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: kLightPrimary,
@@ -415,7 +423,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             ),
           ),
         ),
-        SizedBox(height: 30.h),
+        SizedBox(height: 20.h),
 
         // Login & Fingerprint Row
         Row(

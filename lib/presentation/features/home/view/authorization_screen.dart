@@ -147,7 +147,7 @@ class _AuthorizationScreenState extends ConsumerState<AuthorizationScreen> {
                 Expanded(
                   child: ListView.builder(
                     itemBuilder: (context, index) =>
-                        _Card(authorizations, index),
+                        _card(authorizations, index),
                     itemCount: authorizations.length,
                   ),
                 ),
@@ -167,7 +167,7 @@ class _AuthorizationScreenState extends ConsumerState<AuthorizationScreen> {
 }
 
 // card for each authorization request
-Widget? _Card(List<Map<String, dynamic>> authorizations, int index) {
+Widget? _card(List<Map<String, dynamic>> authorizations, int index) {
   final auth = authorizations[index];
   return Card(
     margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),

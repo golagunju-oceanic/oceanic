@@ -49,6 +49,17 @@ dependencies:
   connectivity_plus: ^7.0.0
   http: ^1.6.0
   curved_navigation_bar: ^1.0.6
+  firebase_core: ^4.7.0
+  firebase_messaging: ^16.2.0
+  flutter_launcher_icons: ^0.14.4
+    
+
+flutter_launcher_icons:
+  ios: true
+  android: true
+  remove_alpha_ios: true
+  remove_alpha_android: true
+  image_path: "assets/images/logo.png"
 
 dev_dependencies:
   flutter_test:

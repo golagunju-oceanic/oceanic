@@ -1,8 +1,12 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:oceanic/core/constants/app_colors.dart';
 import 'package:oceanic/data/repositories/providers/user_provider.dart';
 import 'package:oceanic/presentation/features/home/view/authorization_screen.dart';
+import 'package:oceanic/presentation/features/home/view/find_provider.dart';
+import 'package:oceanic/presentation/features/home/view/health_record.dart';
+import 'package:oceanic/presentation/features/home/view/medical_request.dart';
 import 'package:oceanic/presentation/features/home/view/policy_details.dart';
 import 'package:oceanic/presentation/features/home/view/telemedicine.dart';
 import 'package:oceanic/presentation/widgets/bottom_nav_bar.dart';
@@ -66,28 +70,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       'title': 'Health Records',
       'subtitle': 'View your health records',
       'color': Color(0xFFE57373),
-      'route': const PolicyDetailsScreen(),
+      'route': const HealthRecord(),
     },
     {
       'icon': Icons.video_call_outlined,
       'title': 'Telemedicine',
       'subtitle': 'Virtual consultation with a Doctor',
       'color': Color(0xFF42A5F5),
-      'route': const PolicyDetailsScreen(),
+      'route': const TelemedicineConsentScreen(),
     },
     {
       'icon': Icons.medication_outlined,
       'title': 'Medication Request',
       'subtitle': 'Request your medication',
       'color': Color(0xFF66BB6A),
-      'route': const TelemedicineConsentScreen(),
+      'route': const MedicalRequest(),
     },
     {
       'icon': Icons.find_in_page_outlined,
       'title': 'Find a Provider',
       'subtitle': 'Locate healthcare providers',
       'color': Color(0xFFFFA726),
-      'route': const PolicyDetailsScreen(),
+      'route': const FindProvider(),
     },
   ];
 
@@ -112,6 +116,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   children: [
                     SingleChildScrollView(
                       controller: _scrollController,
+                      // dragStartBehavior: DragStartBehavior.start,
+                      physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.only(top: 80),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,7 +192,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ],
                 ),
               ),
-              bottomNavigationBar: CustomBottomNavBar(),
+              // bottomNavigationBar: CustomBottomNavBar(),
             ),
           ),
           // Container(color: kNavyBlue, height: bottomPadding),
