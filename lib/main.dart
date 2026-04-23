@@ -6,10 +6,12 @@ import 'package:oceanic/core/constants/app_colors.dart';
 import 'package:oceanic/presentation/features/home/view/Profile.dart';
 import 'package:oceanic/presentation/features/home/view/splash_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-
+import 'firebase_options.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   await FirebaseApi().initNotifications();
   runApp(const MyApp());
 }

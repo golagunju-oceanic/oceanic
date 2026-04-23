@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "151141982970",
+    "project_id": "oceanic-test-77f80",
+    "storage_bucket": "oceanic-test-77f80.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:151141982970:android:6aaf2c256eeacde9ee9f43",
+        "android_client_info": {
+          "package_name": "com.oceanichealth.oceanic"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBRh50PORKg7bnyJs7Ny3xqpS6RujL-FJ8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
