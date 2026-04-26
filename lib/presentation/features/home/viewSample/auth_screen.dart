@@ -434,6 +434,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }) {
     return Column(
       children: [
+        SizedBox(height: 20.h),
         CustomTextField(
           hint: 'Member ID',
           prefixIcon: Icons.person,

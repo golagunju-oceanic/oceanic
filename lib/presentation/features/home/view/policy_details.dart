@@ -25,7 +25,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userAsync = ref.watch(authAsyncProvider);
+    // final userAsync = ref.watch(authAsyncProvider);
     return Scaffold(
       backgroundColor: const Color(0xFFF2F2F7),
       body: Padding(
@@ -50,7 +50,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _buildPolicySummaryCard(userAsync),
+                  _buildPolicySummaryCard(),
                   const SizedBox(height: 12),
                   _buildExpandableCard(
                     title: 'View Beneficiaries',
@@ -78,7 +78,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
               right: 16,
               child: FloatingAppBar(
                 scrollController: _scrollController,
-                username: userAsync.value?.username ?? 'User',
+                username: 'User',
               ),
             ),
           ],
@@ -88,7 +88,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
     );
   }
 
-  Widget _buildPolicySummaryCard(AsyncValue<UserModel?> userAsync) {
+  Widget _buildPolicySummaryCard() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -114,7 +114,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          _buildPolicyRow('Policy Holder', userAsync.value?.username ?? 'User'),
+          _buildPolicyRow('Policy Holder', 'User'),
           _buildDivider(),
           _buildPolicyRow('Policy Type', 'Group'),
           _buildDivider(),

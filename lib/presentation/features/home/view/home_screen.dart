@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +7,7 @@ import 'package:oceanic/core/constants/app_colors.dart';
 import 'package:oceanic/data/repositories/providers/user_provider.dart';
 import 'package:oceanic/presentation/features/home/view/authorization_screen.dart';
 import 'package:oceanic/presentation/features/home/view/find_provider.dart';
+import 'package:oceanic/presentation/features/home/view/health_provider.dart';
 import 'package:oceanic/presentation/features/home/view/health_record.dart';
 import 'package:oceanic/presentation/features/home/view/medical_request.dart';
 import 'package:oceanic/presentation/features/home/view/policy_details.dart';
@@ -22,10 +25,33 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _currentBanner = 0;
+  // late PageController _pageController;
+  final PageController _pageController = PageController();
+  Timer? _bannerTimer;
+  @override
+  void initState() {
+    super.initState();
+    // _pageController = PageController();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _startBannerTimer());
+  }
+
+  void _startBannerTimer() {
+    _bannerTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!_pageController.hasClients) return;
+      final nextPage = (_currentBanner + 1) % _banners.length;
+      _pageController.animateToPage(
+        nextPage,
+        duration: const Duration(milliseconds: 800),
+        curve: Curves.easeInOutQuart,
+      );
+    });
+  }
 
   final ScrollController _scrollController = ScrollController();
   @override
   void dispose() {
+    _bannerTimer?.cancel();
+    _pageController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -91,13 +117,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       'title': 'Find a Provider',
       'subtitle': 'Locate healthcare providers',
       'color': Color(0xFFFFA726),
-      'route': const FindProvider(),
+      'route': const HealthProvider(),
     },
   ];
 
   @override
   Widget build(BuildContext context) {
-    final userAsync = ref.watch(authAsyncProvider);
+    // final userAsync = ref.watch(authAsyncProvider);
     final screenHeight = MediaQuery.of(context).size.height;
     final topPadding = MediaQuery.of(context).padding.top;
     return Container(
@@ -109,92 +135,90 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Scaffold(
               endDrawer: CustomDrawer(),
               backgroundColor: Colors.white,
-              body: userAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, _) => Center(child: Text(error.toString())),
-                data: (user) => Stack(
-                  children: [
-                    SingleChildScrollView(
-                      controller: _scrollController,
-                      // dragStartBehavior: DragStartBehavior.start,
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.only(top: 80),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                            child: Text(
-                              'Sustaining your peace',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w500,
-                              ),
+              body: Stack(
+                children: [
+                  SingleChildScrollView(
+                    controller: _scrollController,
+                    // dragStartBehavior: DragStartBehavior.start,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.only(top: 80),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                          child: Text(
+                            'Sustaining your peace',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                          SizedBox(
-                            height: screenHeight * 0.25,
-                            child: Stack(
-                              children: [
-                                PageView.builder(
-                                  itemCount: _banners.length,
-                                  onPageChanged: (i) =>
-                                      setState(() => _currentBanner = i),
-                                  itemBuilder: (_, i) =>
-                                      _buildBanner(_banners[i], screenHeight),
-                                ),
-                                Positioned(
-                                  bottom: 8,
-                                  left: 0,
-                                  right: 0,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: List.generate(
-                                      _banners.length,
-                                      (i) => Container(
-                                        margin: const EdgeInsets.symmetric(
-                                          horizontal: 3,
-                                        ),
-                                        width: _currentBanner == i ? 10 : 8,
-                                        height: _currentBanner == i ? 10 : 8,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: _currentBanner == i
-                                              ? kNavyBlue
-                                              : Colors.grey.shade400,
-                                        ),
+                        ),
+                        SizedBox(
+                          height: screenHeight * 0.25,
+                          child: Stack(
+                            children: [
+                              PageView.builder(
+                                controller: _pageController,
+                                itemCount: _banners.length,
+                                onPageChanged: (i) =>
+                                    setState(() => _currentBanner = i),
+                                itemBuilder: (_, i) =>
+                                    _buildBanner(_banners[i], screenHeight),
+                              ),
+                              Positioned(
+                                bottom: 8,
+                                left: 0,
+                                right: 0,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: List.generate(
+                                    _banners.length,
+                                    (i) => Container(
+                                      margin: const EdgeInsets.symmetric(
+                                        horizontal: 3,
+                                      ),
+                                      width: _currentBanner == i ? 10 : 8,
+                                      height: _currentBanner == i ? 10 : 8,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: _currentBanner == i
+                                            ? kNavyBlue
+                                            : Colors.grey.shade400,
                                       ),
                                     ),
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 16),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Column(
-                              children: _menuItems
-                                  .map((item) => _buildMenuItem(context, item))
-                                  .toList(),
-                            ),
+                        ),
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            children: _menuItems
+                                .map((item) => _buildMenuItem(context, item))
+                                .toList(),
                           ),
-                          const SizedBox(height: 16),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                     ),
+                  ),
 
-                    // --- Floating App Bar ---
-                    FloatingAppBar(
-                      scrollController: _scrollController,
-                      username: user?.username ?? 'User',
-                    ),
-                  ],
-                ),
+                  // --- Floating App Bar ---
+                  FloatingAppBar(
+                    scrollController: _scrollController,
+                    username: 'User',
+                  ),
+                ],
               ),
-              // bottomNavigationBar: CustomBottomNavBar(),
             ),
+            // bottomNavigationBar: CustomBottomNavBar(),
           ),
+
           // Container(color: kNavyBlue, height: bottomPadding),
         ],
       ),
