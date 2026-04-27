@@ -14,7 +14,7 @@ class _HealthRecordState extends State<HealthRecord> {
   DateTimeRange? _selectedDateRange;
   void _pickDateRange() async {
     final DateTimeRange? picked = await showDateRangePicker(
-      barrierColor: kNavyBlue.withOpacity(0.5),
+      barrierColor: kNavyBlue.withValues(alpha: 0.5),
       context: context,
       firstDate: DateTime(2024),
       lastDate: DateTime.now(),
@@ -188,7 +188,7 @@ Widget listItem(Map<String, dynamic> record) {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
+            color: Colors.blue.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: _getIcon(record['type']),
@@ -225,7 +225,7 @@ Widget listItem(Map<String, dynamic> record) {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: _getStatusColor(record['status']).withOpacity(0.1),
+            color: _getStatusColor(record['status']).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(

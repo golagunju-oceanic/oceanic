@@ -167,7 +167,7 @@ class _HealthProviderState extends State<HealthProvider> {
         Switch(
           value: _showOutsideNetwork,
           onChanged: (v) => setState(() => _showOutsideNetwork = v),
-          activeColor: kNavyBlue,
+          activeThumbColor: kNavyBlue,
           inactiveThumbColor: Colors.white,
           inactiveTrackColor: Colors.grey.shade300,
           trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
@@ -194,7 +194,7 @@ class _HealthProviderState extends State<HealthProvider> {
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(vertical: 8),
           leading: CircleAvatar(
-            backgroundColor: kNavyBlue.withOpacity(0.1),
+            backgroundColor: kNavyBlue.withValues(alpha: 0.1),
             child: const Icon(Icons.local_hospital_outlined, color: kNavyBlue),
           ),
           title: Text(

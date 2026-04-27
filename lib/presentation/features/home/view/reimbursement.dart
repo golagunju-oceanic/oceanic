@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:oceanic/core/constants/app_colors.dart';
-import 'package:oceanic/presentation/widgets/drawer.dart';
 import 'package:oceanic/presentation/widgets/floating_app_bar.dart';
 
 class ReimbursementScreen extends StatefulWidget {
@@ -313,11 +312,11 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     String? Function(String?)? validator,
   }) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       validator: validator,
       decoration: InputDecoration(
         filled: true,
-        // fillColor: _inputFillColor,
+
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 14,
@@ -349,7 +348,7 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
 
   Widget _buildCityDropdown() {
     return DropdownButtonFormField<String>(
-      value: _selectedCity,
+      initialValue: _selectedCity,
       validator: (v) => v == null ? 'Select a city' : null,
       decoration: InputDecoration(
         filled: true,

@@ -1,18 +1,14 @@
 import 'dart:async';
-
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:oceanic/core/constants/app_colors.dart';
-import 'package:oceanic/data/repositories/providers/user_provider.dart';
 import 'package:oceanic/presentation/features/home/view/authorization_screen.dart';
-import 'package:oceanic/presentation/features/home/view/find_provider.dart';
+
 import 'package:oceanic/presentation/features/home/view/health_provider.dart';
 import 'package:oceanic/presentation/features/home/view/health_record.dart';
 import 'package:oceanic/presentation/features/home/view/medical_request.dart';
 import 'package:oceanic/presentation/features/home/view/policy_details.dart';
 import 'package:oceanic/presentation/features/home/view/telemedicine.dart';
-import 'package:oceanic/presentation/widgets/bottom_nav_bar.dart';
 import 'package:oceanic/presentation/widgets/drawer.dart';
 import 'package:oceanic/presentation/widgets/floating_app_bar.dart';
 
@@ -25,13 +21,13 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _currentBanner = 0;
-  // late PageController _pageController;
+
   final PageController _pageController = PageController();
   Timer? _bannerTimer;
   @override
   void initState() {
     super.initState();
-    // _pageController = PageController();
+
     WidgetsBinding.instance.addPostFrameCallback((_) => _startBannerTimer());
   }
 
@@ -241,7 +237,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 image: Image.asset(banner['image']!).image,
                 fit: BoxFit.cover,
                 colorFilter: ColorFilter.mode(
-                  Colors.black.withOpacity(0.3),
+                  Colors.black.withValues(alpha: 0.3),
                   BlendMode.darken,
                 ),
               ),
@@ -271,7 +267,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               constraints: const BoxConstraints(maxWidth: 230),
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: kTeal.withOpacity(0.8),
+                color: kTeal.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
@@ -307,7 +303,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -327,7 +323,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           width: 46,
           height: 46,
           decoration: BoxDecoration(
-            color: (item['color'] as Color).withOpacity(0.12),
+            color: (item['color'] as Color).withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
@@ -350,69 +346,3 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 }
-
-// --- Reusable floating bar action button ---
-// class _FloatingNavAction extends StatelessWidget {
-//   final IconData icon;
-//   final bool isScrolled;
-//   final VoidCallback onTap;
-//   final int badgeCount;
-
-//   const _FloatingNavAction({
-//     required this.icon,
-//     required this.isScrolled,
-//     required this.onTap,
-//     this.badgeCount = 0,
-//   });
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return GestureDetector(
-//       onTap: onTap,
-//       child: Stack(
-//         clipBehavior: Clip.none,
-//         children: [
-//           AnimatedContainer(
-//             duration: const Duration(milliseconds: 200),
-//             width: 36,
-//             height: 36,
-//             decoration: BoxDecoration(
-//               color: isScrolled
-//                   ? Colors.white.withOpacity(0.15)
-//                   : kNavyBlue.withOpacity(0.08),
-//               borderRadius: BorderRadius.circular(10),
-//             ),
-//             child: Icon(
-//               icon,
-//               color: isScrolled ? Colors.white : kNavyBlue,
-//               size: 20,
-//             ),
-//           ),
-//           if (badgeCount > 0)
-//             Positioned(
-//               top: -4,
-//               right: -4,
-//               child: Container(
-//                 width: 16,
-//                 height: 16,
-//                 decoration: const BoxDecoration(
-//                   color: Color(0xFFE74C3C),
-//                   shape: BoxShape.circle,
-//                 ),
-//                 child: Center(
-//                   child: Text(
-//                     '$badgeCount',
-//                     style: const TextStyle(
-//                       color: Colors.white,
-//                       fontSize: 9,
-//                       fontWeight: FontWeight.bold,
-//                     ),
-//                   ),
-//                 ),
-//               ),
-//             ),
-//         ],
-//       ),
-//     );
-//   }
-// }

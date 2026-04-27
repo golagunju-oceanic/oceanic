@@ -69,7 +69,7 @@ class ForgotPasswordScreen extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: const [
                         BoxShadow(
@@ -112,28 +112,31 @@ class ForgotPasswordScreen extends ConsumerWidget {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Radio<String>(
-                                  value: 'email',
+                                RadioGroup<String>(
                                   groupValue: state.verificationMethod,
-                                  activeColor: kLightPrimary,
                                   onChanged: (val) =>
                                       viewModel.setVerificationMethod(val!),
-                                ),
-                                const Text(
-                                  'Email',
-                                  style: TextStyle(color: Colors.black87),
-                                ),
-                                const SizedBox(width: 20),
-                                Radio<String>(
-                                  value: 'sms',
-                                  groupValue: state.verificationMethod,
-                                  activeColor: kLightPrimary,
-                                  onChanged: (val) =>
-                                      viewModel.setVerificationMethod(val!),
-                                ),
-                                const Text(
-                                  'SMS',
-                                  style: TextStyle(color: Colors.black87),
+                                  child: Row(
+                                    children: [
+                                      Radio<String>(
+                                        value: 'email',
+                                        activeColor: kLightPrimary,
+                                      ),
+                                      const Text(
+                                        'Email',
+                                        style: TextStyle(color: Colors.black87),
+                                      ),
+                                      const SizedBox(width: 20),
+                                      Radio<String>(
+                                        value: 'sms',
+                                        activeColor: kLightPrimary,
+                                      ),
+                                      const Text(
+                                        'SMS',
+                                        style: TextStyle(color: Colors.black87),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
@@ -187,7 +190,6 @@ class ForgotPasswordScreen extends ConsumerWidget {
   }
 }
 
-// Ensure you have the CustomTextField from the previous code available!
 class CustomTextField extends StatelessWidget {
   final String hint;
   final IconData prefixIcon;

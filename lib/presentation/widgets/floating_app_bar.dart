@@ -8,7 +8,6 @@ class FloatingAppBar extends StatefulWidget {
   const FloatingAppBar({
     required this.scrollController,
     required this.username,
-    // required this.navAction,
     super.key,
   });
 
@@ -52,7 +51,7 @@ class _FloatingAppBarState extends State<FloatingAppBar> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(_isScrolled ? 0.2 : 0.08),
+              color: Colors.black.withValues(alpha: _isScrolled ? 0.2 : 0.08),
               blurRadius: _isScrolled ? 20 : 12,
               offset: const Offset(0, 4),
             ),
@@ -84,12 +83,6 @@ class _FloatingAppBarState extends State<FloatingAppBar> {
                   child: Text('Hello ${widget.username}'),
                 ),
               ),
-              // _FloatingNavAction(
-              //   icon: Icons.notifications_none_rounded,
-              //   isScrolled: _isScrolled,
-              //   onTap: () {},
-              //   badgeCount: 2,
-              // ),
               const SizedBox(width: 8),
               GestureDetector(
                 onTap: () {},
@@ -99,8 +92,8 @@ class _FloatingAppBarState extends State<FloatingAppBar> {
                   height: 36,
                   decoration: BoxDecoration(
                     color: _isScrolled
-                        ? Colors.white.withOpacity(0.15)
-                        : kNavyBlue.withOpacity(0.08),
+                        ? Colors.white.withValues(alpha: 0.15)
+                        : kNavyBlue.withValues(alpha: 0.08),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(

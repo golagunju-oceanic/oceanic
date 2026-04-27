@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:oceanic/data/repositories/providers/user_provider.dart';
+
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:oceanic/presentation/widgets/drawer.dart';
 
@@ -9,7 +9,6 @@ class AuthorizationScreen extends ConsumerStatefulWidget {
   @override
   ConsumerState<AuthorizationScreen> createState() =>
       _AuthorizationScreenState();
-  // ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _AuthorizationScreenState extends ConsumerState<AuthorizationScreen> {
@@ -75,7 +74,6 @@ class _AuthorizationScreenState extends ConsumerState<AuthorizationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // final userAsync = ref.watch(authAsyncProvider);
     return Scaffold(
       endDrawer: CustomDrawer(),
       appBar: AppBar(
@@ -151,20 +149,12 @@ class _AuthorizationScreenState extends ConsumerState<AuthorizationScreen> {
               ),
             ],
           ),
-          // FloatingAppBar(
-          //   scrollController: _scrollController,
-          //   username: user?.username ?? 'User',
-          // ),
         ],
       ),
-
-      // loading: () => const Center(child: CircularProgressIndicator()),
-      // error: (error, _) => Center(child: Text(error.toString())),
     );
   }
 }
 
-// card for each authorization request
 Widget? _card(List<Map<String, dynamic>> authorizations, int index) {
   final auth = authorizations[index];
   return Card(
@@ -186,7 +176,6 @@ Widget? _card(List<Map<String, dynamic>> authorizations, int index) {
           Row(
             children: [
               Container(
-                // padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                 decoration: BoxDecoration(
                   color: auth['status'] == 'APPROVED'
                       ? Colors.green

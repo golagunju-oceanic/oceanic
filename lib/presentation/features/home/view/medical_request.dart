@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:oceanic/core/constants/app_colors.dart';
-import 'package:oceanic/presentation/widgets/bottom_nav_bar.dart';
+
 import 'package:oceanic/presentation/widgets/drawer.dart';
 
 class MedicalRequest extends ConsumerStatefulWidget {
@@ -113,7 +113,6 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
               : _requestRefill(),
         ],
       ),
-      // bottomNavigationBar: CustomBottomNavBar(),
     );
   }
 }
@@ -167,7 +166,7 @@ Widget _newPrescribtion(
               height: 50,
               padding: EdgeInsets.all(5),
               decoration: BoxDecoration(
-                color: kNavyBlue.withOpacity(0.2),
+                color: kNavyBlue.withValues(alpha: 0.2),
                 border: Border.all(width: 1),
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -177,7 +176,6 @@ Widget _newPrescribtion(
             ),
           ),
           Text("Select state", style: TextStyle(color: Colors.grey)),
-          // SizedBox(height: 10),
           GestureDetector(
             onTap: () => showModalBottomSheet(
               context: context,
@@ -233,7 +231,7 @@ Widget _newPrescribtion(
               height: 50,
               padding: EdgeInsets.all(5),
               decoration: BoxDecoration(
-                color: kNavyBlue.withOpacity(0.2),
+                color: kNavyBlue.withValues(alpha: 0.2),
                 border: Border.all(width: 1),
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -303,7 +301,7 @@ Widget _newPrescribtion(
               height: 50,
               padding: EdgeInsets.all(5),
               decoration: BoxDecoration(
-                color: kNavyBlue.withOpacity(0.2),
+                color: kNavyBlue.withValues(alpha: 0.2),
                 border: Border.all(width: 1),
                 borderRadius: BorderRadius.circular(10),
               ),
