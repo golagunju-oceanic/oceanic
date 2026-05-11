@@ -129,7 +129,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Container(color: Colors.white, height: topPadding),
           Expanded(
             child: Scaffold(
-              endDrawer: CustomDrawer(),
+              drawer: CustomDrawer(),
               backgroundColor: Colors.white,
               body: Stack(
                 children: [

@@ -15,6 +15,8 @@ class MedicalRequest extends ConsumerStatefulWidget {
 class _MedicalRequestState extends ConsumerState<MedicalRequest> {
   bool _isSelected = true;
   String? selectedState;
+  // String? selectedState2;
+  String? selectedCity;
   @override
   Widget build(BuildContext context) {
     const List<String> nigerianStates = [
@@ -61,56 +63,76 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
       appBar: AppBar(title: const Text('Medical Request')),
       body: Column(
         children: [
-          Row(
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    _isSelected = false;
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _isSelected ? Colors.grey : kNavyBlue,
-                  foregroundColor: _isSelected ? Colors.black : Colors.white,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _isSelected = false),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: !_isSelected
+                            ? const Color(0xFF2D2D8E)
+                            : const Color(0xFFEAEAEA),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        'New Prescription',
+                        style: TextStyle(
+                          color: !_isSelected ? Colors.white : Colors.black54,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    Icon(Icons.local_hospital),
-                    Text('New Prescription'),
-                  ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _isSelected = true),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: _isSelected
+                            ? const Color(0xFF2D2D8E)
+                            : const Color(0xFFEAEAEA),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        'Request Refill',
+                        style: TextStyle(
+                          color: _isSelected ? Colors.white : Colors.black54,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    _isSelected = true;
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _isSelected ? kNavyBlue : Colors.grey,
-                  foregroundColor: _isSelected ? Colors.white : Colors.black,
-                ),
-                child: Row(
-                  children: [Icon(Icons.health_and_safety), Text('Refill')],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-          _isSelected
-              ? Expanded(
-                  child: _newPrescribtion(
+
+          // Content
+          Expanded(
+            child: _isSelected
+                ? _requestRefill()
+                : _newPrescribtion(
                     context,
                     nigerianStates,
                     selectedState,
-                    (value) {
-                      setState(() {
-                        selectedState = value;
-                      });
-                    },
-                    null,
+                    (value) => setState(() => selectedState = value),
+                    selectedCity,
+                    (value) => setState(() => selectedCity = value),
                   ),
-                )
-              : _requestRefill(),
+          ),
         ],
       ),
     );
@@ -124,6 +146,7 @@ Widget _newPrescribtion(
 
   Function(String) onStateSelected,
   String? selectedCity,
+  Function(String) onCitySelected,
 ) {
   return Padding(
     padding: EdgeInsets.all(10),
@@ -282,7 +305,7 @@ Widget _newPrescribtion(
                               itemBuilder: (context, index) => ListTile(
                                 title: Text(filteredStates[index]),
                                 onTap: () {
-                                  onStateSelected(filteredStates[index]);
+                                  onCitySelected(filteredStates[index]);
                                   Navigator.pop(context);
                                 },
                               ),
@@ -391,9 +414,260 @@ Widget _newPrescribtion(
   );
 }
 
+// Add these to your parent state class:
+// bool _isRefill = true;
+// String? _selectedBeneficiary;
+// String? _selectedState;
+// String? _selectedCity;
+
 Widget _requestRefill() {
-  return Column(
-    children: [DropdownButton(items: [], onChanged: (hello) {})],
+  // bool isRefill = true;
+  String? selectedBeneficiary;
+  String? selectedState;
+  String? selectedCity;
+  return SingleChildScrollView(
+    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+    child: StatefulBuilder(
+      builder: (context, setState) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Title row
+            // const SizedBox(height: 20),
+
+            // Tab toggle
+
+            // Name
+            const Text(
+              'Name',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF2F2F2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  isExpanded: true,
+                  value: selectedBeneficiary,
+                  hint: const Text(
+                    'Please select a beneficiary',
+                    style: TextStyle(color: Colors.black45, fontSize: 15),
+                  ),
+                  icon: const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: Colors.black45,
+                  ),
+                  items: ['John Doe', 'Jane Doe', 'Bob Smith']
+                      .map(
+                        (e) => DropdownMenuItem(
+                          value: e,
+                          child: Text(e, style: const TextStyle(fontSize: 15)),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (v) => setState(() => selectedBeneficiary = v),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // State
+            const Text(
+              'Select State',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF2F2F2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  isExpanded: true,
+                  value: selectedState,
+                  hint: const Text(
+                    'Select',
+                    style: TextStyle(color: Colors.black45, fontSize: 15),
+                  ),
+                  icon: const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: Colors.black45,
+                  ),
+                  items: ['Lagos', 'Abuja', 'Rivers', 'Kano']
+                      .map(
+                        (e) => DropdownMenuItem(
+                          value: e,
+                          child: Text(e, style: const TextStyle(fontSize: 15)),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (v) => setState(() => selectedState = v),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // City
+            const Text(
+              'Select City',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF2F2F2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.location_on_outlined,
+                    color: Colors.black45,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        value: selectedCity,
+                        hint: const Text(
+                          'Select a city',
+                          style: TextStyle(color: Colors.black45, fontSize: 15),
+                        ),
+                        icon: const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: Colors.black45,
+                        ),
+                        items: ['Ikeja', 'Lekki', 'Victoria Island', 'Yaba']
+                            .map(
+                              (e) => DropdownMenuItem(
+                                value: e,
+                                child: Text(
+                                  e,
+                                  style: const TextStyle(fontSize: 15),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (v) => setState(() => selectedCity = v),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 28),
+
+            // Prescribed medications
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Prescribed Medications',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {},
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF2D2D8E),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.add, color: Colors.white, size: 22),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Center(
+              child: Text(
+                'Kindly select a prescribed medication',
+                style: TextStyle(color: Colors.black38, fontSize: 14),
+              ),
+            ),
+            const SizedBox(height: 36),
+
+            // Submit
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2D2D8E),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  'Submit',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            RichText(
+              textAlign: TextAlign.center,
+              text: TextSpan(
+                text:
+                    "If you're having difficulty reqquesting for medication, Kindly contact ",
+                style: TextStyle(color: Colors.grey[800]),
+                children: [
+                  TextSpan(
+                    text: '02013300300',
+                    style: TextStyle(
+                      color: kNavyBlue,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                  TextSpan(text: ' or send us a mail at '),
+                  TextSpan(
+                    text: 'pbm@oceanichealthng.com',
+                    style: TextStyle(
+                      color: kNavyBlue,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+          ],
+        );
+      },
+    ),
   );
 }
 

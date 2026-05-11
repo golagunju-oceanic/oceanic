@@ -1,4 +1,4 @@
-{
+﻿{
   "project_info": {
     "project_number": "151141982970",
     "project_id": "oceanic-test-77f80",
@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:151141982970:android:6aaf2c256eeacde9ee9f43",
+        "mobilesdk_app_id": "1:151141982970:android:adc40a38402cf4acee9f43",
         "android_client_info": {
-          "package_name": "com.oceanichealth.oceanic"
+          "package_name": "com.flowva.app"
         }
       },
       "oauth_client": [],

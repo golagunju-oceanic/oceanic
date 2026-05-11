@@ -78,60 +78,61 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     final state = ref.watch(authProvider);
     final viewModel = ref.read(authProvider.notifier);
-
 
     return Scaffold(
       body: Stack(
         children: [
-          
           BackgroundImage(),
 
-          
           SafeArea(
-            child: Container(
-              margin: EdgeInsets.symmetric(horizontal: 24.w),
-              child: Column(
-                children: [
-                  SizedBox(height: 70.h),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 10.w,
+                  right: 10.w,
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
+                ),
+                child: Container(
+                  margin: EdgeInsets.symmetric(horizontal: 24.w),
+                  child: Column(
+                    children: [
+                      SizedBox(height: 70.h),
 
-              
-                  _buildToggleButtonSwitch(state, viewModel),
-                  SizedBox(height: 20.h),
+                      _buildToggleButtonSwitch(state, viewModel),
+                      SizedBox(height: 20.h),
 
-                 
-                  AnimatedCrossFade(
-                    firstChild: _buildSignUpForm(
-                
-                      state: state,
-                      viewModel: viewModel,
-                      confirmPasswordController: confirmPasswordController,
-                      memberIdController: memberIdController,
-                      passwordController: passwordController,
-                    ),
-                    secondChild: _buildLoginForm(
-             
-                      state: state,
-                      viewModel: viewModel,
-                      context: context,
-                      memberIdController: memberIdController,
-                      passwordController: passwordController,
-                    ),
-                    crossFadeState: state.isLoginView
-                        ? CrossFadeState.showSecond
-                        : CrossFadeState.showFirst,
-                    duration: const Duration(milliseconds: 300),
+                      AnimatedCrossFade(
+                        firstChild: _buildSignUpForm(
+                          state: state,
+                          viewModel: viewModel,
+                          confirmPasswordController: confirmPasswordController,
+                          memberIdController: memberIdController,
+                          passwordController: passwordController,
+                        ),
+                        secondChild: _buildLoginForm(
+                          state: state,
+                          viewModel: viewModel,
+                          context: context,
+                          memberIdController: memberIdController,
+                          passwordController: passwordController,
+                        ),
+                        crossFadeState: state.isLoginView
+                            ? CrossFadeState.showSecond
+                            : CrossFadeState.showFirst,
+                        duration: const Duration(milliseconds: 300),
+                      ),
+
+                      SizedBox(height: 20.h),
+                      Image.asset(
+                        'assets/images/atca.png',
+                        height: 80.h,
+                        fit: BoxFit.contain,
+                      ),
+                    ],
                   ),
-
-                  SizedBox(height: 20.h),
-                  Image.asset(
-                    'assets/images/atca.png',
-                    height: 80.h,
-                    fit: BoxFit.contain,
-                  ),
-                ],
+                ),
               ),
             ),
           ),
@@ -309,7 +310,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         ),
         SizedBox(height: 10.h),
 
-       
         SizedBox(
           width: 150.w,
           height: 30.h,
@@ -371,7 +371,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           ),
         ),
 
-     
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
@@ -393,7 +392,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         ),
         SizedBox(height: 20.h),
 
-   
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -407,24 +405,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     borderRadius: BorderRadius.circular(8.r),
                   ),
                 ),
-                onPressed:
-           
-                    loginUser,
-                child:
-                    
-                    const Text(
-                      'LOGIN',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
+                onPressed: loginUser,
+                child: const Text(
+                  'LOGIN',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 16),
 
-            
             Container(
               width: 50.w,
               height: 50.h,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:oceanic/core/constants/app_colors.dart';
+import 'package:oceanic/presentation/widgets/drawer.dart';
 import 'package:oceanic/presentation/widgets/floating_app_bar.dart';
 
 class ReimbursementScreen extends StatefulWidget {
@@ -106,6 +107,7 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: CustomDrawer(),
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Stack(

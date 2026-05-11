@@ -63,7 +63,7 @@ class _FloatingAppBarState extends State<FloatingAppBar> {
             children: [
               Builder(
                 builder: (ctx) => GestureDetector(
-                  onTap: () => Scaffold.of(ctx).openEndDrawer(),
+                  onTap: () => Scaffold.of(ctx).openDrawer(),
                   child: Icon(
                     Icons.menu_rounded,
                     color: _isScrolled ? Colors.white : kNavyBlue,

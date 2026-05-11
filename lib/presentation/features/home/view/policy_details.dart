@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:oceanic/presentation/widgets/drawer.dart';
 import 'package:oceanic/presentation/widgets/floating_app_bar.dart';
 
 class PolicyDetailsScreen extends ConsumerStatefulWidget {
@@ -13,25 +14,19 @@ class PolicyDetailsScreen extends ConsumerStatefulWidget {
 class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
   bool _beneficiariesExpanded = false;
   bool _benefitsExpanded = false;
-  final ScrollController _scrollController = ScrollController();
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
-    // final userAsync = ref.watch(authAsyncProvider);
     return Scaffold(
+      appBar: AppBar(title: const Text('Policy Details')),
+      endDrawer: CustomDrawer(),
       backgroundColor: const Color(0xFFF2F2F7),
       body: Padding(
         padding: const EdgeInsets.only(top: 20),
         child: Stack(
           children: [
             SingleChildScrollView(
-              controller: _scrollController,
-              padding: const EdgeInsets.fromLTRB(16, 90, 16, 16),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -69,19 +64,9 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                 ],
               ),
             ),
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 10,
-              left: 16,
-              right: 16,
-              child: FloatingAppBar(
-                scrollController: _scrollController,
-                username: 'User',
-              ),
-            ),
           ],
         ),
       ),
-      // bottomNavigationBar: CustomBottomNavBar(),
     );
   }
 
@@ -92,7 +77,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha:0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -198,7 +183,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha:0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),

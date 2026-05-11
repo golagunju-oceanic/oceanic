@@ -13,7 +13,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final ScrollController _scrollController = ScrollController();
   @override
   Widget build(BuildContext context) {
-    // final userAsync = ref.watch(authAsyncProvider);
     return Scaffold(
       drawer: CustomDrawer(),
       backgroundColor: const Color(0xFFF4F6FB),

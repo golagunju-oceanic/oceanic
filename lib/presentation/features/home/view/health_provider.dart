@@ -13,7 +13,6 @@ class _HealthProviderState extends State<HealthProvider> {
   bool _showOutsideNetwork = false;
   String _searchQuery = '';
 
-  // Simulated provider list — empty by default to match the screenshot
   final List<Map<String, String>> _allProviders = [];
 
   List<Map<String, String>> get _filteredProviders {

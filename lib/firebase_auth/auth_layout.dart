@@ -14,7 +14,6 @@ class AuthLayout extends StatelessWidget {
       builder: (context, authServices, child) {
         return StreamBuilder(
           stream: authServices.authStateChanges,
-
           builder: (context, snapshot) {
             Widget widget;
             if (snapshot.connectionState == ConnectionState.waiting) {
