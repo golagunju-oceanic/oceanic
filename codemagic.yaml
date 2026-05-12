@@ -5,7 +5,7 @@ workflows:
     environment:
       flutter: stable
       groups:
-        - android_signing
+        - keystore
     scripts:
       - name: Get packages
         script: flutter pub get
