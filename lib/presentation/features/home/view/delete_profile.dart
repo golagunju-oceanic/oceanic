@@ -91,7 +91,7 @@ class _DeleteProfilePageState extends State<DeleteProfilePage> {
                         ),
                         decoration: BoxDecoration(
                           color: checked
-                              ? _navy.withOpacity(0.06)
+                              ? _navy.withValues(alpha: 0.06)
                               : Colors.white,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
@@ -100,7 +100,7 @@ class _DeleteProfilePageState extends State<DeleteProfilePage> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
+                              color: Colors.black.withValues(alpha: 0.04),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
                             ),
@@ -269,7 +269,7 @@ class _Header extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: Colors.white.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(

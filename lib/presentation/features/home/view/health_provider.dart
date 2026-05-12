@@ -187,7 +187,7 @@ class _HealthProviderState extends State<HealthProvider> {
 
     return ListView.separated(
       itemCount: _filteredProviders.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
+      separatorBuilder: (_, _) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final provider = _filteredProviders[index];
         return ListTile(

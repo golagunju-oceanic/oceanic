@@ -133,7 +133,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _selectedMode != null
                       ? kTeal
-                      : kTeal.withOpacity(0.4),
+                      : kTeal.withValues(alpha: 0.4),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   elevation: 0,

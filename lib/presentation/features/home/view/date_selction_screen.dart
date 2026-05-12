@@ -136,7 +136,7 @@ class _DateSelectionScreenState extends State<DateSelectionScreen> {
                       child: Container(
                         decoration: BoxDecoration(
                           color: _selectedTime == t
-                              ? kTeal.withOpacity(0.15)
+                              ? kTeal.withValues(alpha: 0.15)
                               : Colors.white,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
@@ -176,7 +176,7 @@ class _DateSelectionScreenState extends State<DateSelectionScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _selectedTime != null
                       ? kTeal
-                      : kTeal.withOpacity(0.4),
+                      : kTeal.withValues(alpha: 0.4),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   elevation: 0,

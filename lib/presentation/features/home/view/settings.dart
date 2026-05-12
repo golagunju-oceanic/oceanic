@@ -216,7 +216,7 @@ class _CircleButton extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
+          color: Colors.white.withValues(alpha:0.15),
           shape: BoxShape.circle,
         ),
         child: Icon(icon, color: Colors.white, size: 18),
@@ -262,7 +262,7 @@ class _SettingsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha:0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
