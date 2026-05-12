@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:oceanic/presentation/widgets/drawer.dart';
-import 'package:oceanic/presentation/widgets/floating_app_bar.dart';
 
 class PolicyDetailsScreen extends ConsumerStatefulWidget {
   const PolicyDetailsScreen({super.key});
