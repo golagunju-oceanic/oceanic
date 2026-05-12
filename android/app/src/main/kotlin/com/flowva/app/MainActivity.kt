@@ -1,4 +1,4 @@
-package com.oceanichealth.oceanic
+package com.flowva.app
 
 import io.flutter.embedding.android.FlutterActivity
 

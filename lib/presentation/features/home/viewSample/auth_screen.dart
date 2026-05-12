@@ -1,9 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:oceanic/core/constants/app_colors.dart';
 import 'package:oceanic/core/utils/utils.dart';
-import 'package:oceanic/data/repositories/providers/user_provider.dart';
-import 'package:oceanic/presentation/features/home/view/home_screen.dart';
+import 'package:oceanic/firebase_auth/auth_services.dart';
 import 'package:oceanic/presentation/features/home/viewSample/forgot_password.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:oceanic/presentation/features/home/viewmodel/auth_screen_provider.dart';
@@ -24,8 +24,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   final TextEditingController confirmPasswordController =
       TextEditingController();
 
-  bool _isActionTriggered = false;
-
   @override
   void dispose() {
     passwordController.dispose();
@@ -34,131 +32,107 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     super.dispose();
   }
 
-  void signUpUser() {
-    if (memberIdController.text.isEmpty ||
-        passwordController.text.isEmpty ||
-        usernameController.text.isEmpty ||
-        confirmPasswordController.text.isEmpty) {
-      showSnackBar(context, 'Please fill in all fields');
-      return;
+  final AuthServices authServices = AuthServices();
+  Future<void> signUpUser() async {
+    try {
+      if (passwordController.text != confirmPasswordController.text) {
+        showSnackBar(context, 'Passwords do not match');
+        return;
+      }
+      await authServices.signUp(
+        memberId: memberIdController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+      if (mounted) {
+        showSnackBar(context, 'Account created. Proceed to login.');
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message ?? 'Sign up failed.')));
+      }
     }
-    if (passwordController.text != confirmPasswordController.text) {
-      showSnackBar(context, 'Passwords do not match');
-      return;
-    }
-
-    _isActionTriggered = true;
-    ref
-        .read(authAsyncProvider.notifier)
-        .signUp(
-          memberId: memberIdController.text.trim(),
-          password: passwordController.text.trim(),
-          confirmPassword: confirmPasswordController.text.trim(),
-          username: usernameController.text.trim(),
-        );
   }
 
-  void loginUser() {
-    if (memberIdController.text.isEmpty || passwordController.text.isEmpty) {
-      showSnackBar(context, 'Please fill in all fields');
-      return;
-    }
-    _isActionTriggered = true;
-    ref
-        .read(authAsyncProvider.notifier)
-        .login(
-          memberId: memberIdController.text.trim(),
-          password: passwordController.text.trim(),
+  Future<void> loginUser() async {
+    try {
+      await authServices.signIn(
+        memberId: memberIdController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const CustomBottomNavBar()),
         );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message ?? 'Sign in failed.')));
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final authAsync = ref.watch(authAsyncProvider);
     final state = ref.watch(authProvider);
     final viewModel = ref.read(authProvider.notifier);
-
-    ref.listen(authAsyncProvider, (previous, next) {
-      if (!_isActionTriggered) return;
-      if (previous == null || !previous.isLoading) return;
-      // Show Error
-      if (next.hasError) {
-        _isActionTriggered = false; // Reset on error
-        showSnackBar(context, next.error.toString());
-        print(next.stackTrace);
-      }
-
-      if (!next.isLoading && !next.hasError && _isActionTriggered) {
-        _isActionTriggered = false;
-
-        if (state.isLoginView) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const CustomBottomNavBar()),
-          );
-        } else {
-          showSnackBar(context, 'Account created, proceed to login');
-
-          passwordController.clear();
-          memberIdController.clear();
-          confirmPasswordController.clear();
-        }
-      }
-    });
 
     return Scaffold(
       body: Stack(
         children: [
-          // Background Image
           BackgroundImage(),
 
-          // Main Content Layer
           SafeArea(
-            child: Container(
-              margin: EdgeInsets.symmetric(horizontal: 24.w),
-              child: Column(
-                children: [
-                  SizedBox(height: 70.h),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 10.w,
+                  right: 10.w,
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
+                ),
+                child: Container(
+                  margin: EdgeInsets.symmetric(horizontal: 24.w),
+                  child: Column(
+                    children: [
+                      SizedBox(height: 70.h),
 
-                  // Image.asset(
-                  //   'assets/images/logo.png',
-                  //   height: 80.h,
-                  //   fit: BoxFit.contain,
-                  // ),
-                  _buildToggleButtonSwitch(state, viewModel),
-                  SizedBox(height: 20.h),
+                      _buildToggleButtonSwitch(state, viewModel),
+                      SizedBox(height: 20.h),
 
-                  // Animated cross-fade between Sign Up and Login
-                  AnimatedCrossFade(
-                    firstChild: _buildSignUpForm(
-                      authAsync: authAsync,
-                      state: state,
-                      viewModel: viewModel,
-                      confirmPasswordController: confirmPasswordController,
-                      memberIdController: memberIdController,
-                      passwordController: passwordController,
-                    ),
-                    secondChild: _buildLoginForm(
-                      authAsync: authAsync,
-                      state: state,
-                      viewModel: viewModel,
-                      context: context,
-                      memberIdController: memberIdController,
-                      passwordController: passwordController,
-                    ),
-                    crossFadeState: state.isLoginView
-                        ? CrossFadeState.showSecond
-                        : CrossFadeState.showFirst,
-                    duration: const Duration(milliseconds: 300),
+                      AnimatedCrossFade(
+                        firstChild: _buildSignUpForm(
+                          state: state,
+                          viewModel: viewModel,
+                          confirmPasswordController: confirmPasswordController,
+                          memberIdController: memberIdController,
+                          passwordController: passwordController,
+                        ),
+                        secondChild: _buildLoginForm(
+                          state: state,
+                          viewModel: viewModel,
+                          context: context,
+                          memberIdController: memberIdController,
+                          passwordController: passwordController,
+                        ),
+                        crossFadeState: state.isLoginView
+                            ? CrossFadeState.showSecond
+                            : CrossFadeState.showFirst,
+                        duration: const Duration(milliseconds: 300),
+                      ),
+
+                      SizedBox(height: 20.h),
+                      Image.asset(
+                        'assets/images/atca.png',
+                        height: 80.h,
+                        fit: BoxFit.contain,
+                      ),
+                    ],
                   ),
-
-                  SizedBox(height: 20.h),
-                  Image.asset(
-                    'assets/images/atca.png',
-                    height: 80.h,
-                    fit: BoxFit.contain,
-                  ),
-                ],
+                ),
               ),
             ),
           ),
@@ -171,7 +145,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     return Container(
       width: 250.w,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: Colors.white.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(30.r),
         boxShadow: [
           BoxShadow(
@@ -184,7 +158,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // LOGIN BUTTON
           Expanded(
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -214,7 +187,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             ),
           ),
 
-          // SIGN UP BUTTON
           Expanded(
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -255,7 +227,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     required TextEditingController passwordController,
     required TextEditingController confirmPasswordController,
     required TextEditingController memberIdController,
-    required AsyncValue<void> authAsync,
   }) {
     return Column(
       children: [
@@ -290,7 +261,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             'The password must include at least one number\nand a uppercase letter.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.black.withOpacity(0.6),
+              color: Colors.black.withValues(alpha: 0.6),
               fontSize: 10.sp,
             ),
           ),
@@ -311,8 +282,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           ),
         ),
         SizedBox(height: 10.h),
-
-        // Verification Radio Buttons
         Text(
           'Receive verification code',
           style: TextStyle(
@@ -324,26 +293,23 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Radio<String>(
-              value: 'email',
+            RadioGroup<String>(
               groupValue: state.verificationMethod,
-              activeColor: kLightPrimary,
               onChanged: (val) => viewModel.setVerificationMethod(val!),
-            ),
-            const Text('Email', style: TextStyle(color: Colors.black87)),
-            const SizedBox(width: 20),
-            Radio<String>(
-              value: 'sms',
-              groupValue: state.verificationMethod,
-              activeColor: kLightPrimary,
-              onChanged: (val) => viewModel.setVerificationMethod(val!),
+              child: Row(
+                children: [
+                  Radio<String>(value: 'email', activeColor: kLightPrimary),
+                  const Text('Email', style: TextStyle(color: Colors.black87)),
+                  const SizedBox(width: 20),
+                  Radio<String>(value: 'sms', activeColor: kLightPrimary),
+                ],
+              ),
             ),
             const Text('SMS', style: TextStyle(color: Colors.black87)),
           ],
         ),
         SizedBox(height: 10.h),
 
-        // Sign Up Button
         SizedBox(
           width: 150.w,
           height: 30.h,
@@ -354,17 +320,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 borderRadius: BorderRadius.circular(4.r),
               ),
             ),
-            onPressed: authAsync is AsyncLoading ? null : signUpUser,
-            child: authAsync is AsyncLoading
-                ? const CircularProgressIndicator(color: Colors.white)
-                : Text(
-                    'SIGN UP',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16.sp,
-                    ),
+            onPressed: signUpUser,
+            child:
+                // authAsync is AsyncLoading
+                //     ? const CircularProgressIndicator(color: Colors.white)
+                // :
+                Text(
+                  'SIGN UP',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16.sp,
                   ),
+                ),
           ),
         ),
       ],
@@ -378,10 +346,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     required BuildContext context,
     required TextEditingController passwordController,
     required TextEditingController memberIdController,
-    required AsyncValue<void> authAsync,
   }) {
     return Column(
       children: [
+        SizedBox(height: 20.h),
         CustomTextField(
           hint: 'Member ID',
           prefixIcon: Icons.person,
@@ -403,7 +371,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           ),
         ),
 
-        // Forgot Password link
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
@@ -425,7 +392,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         ),
         SizedBox(height: 20.h),
 
-        // Login & Fingerprint Row
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -439,22 +405,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     borderRadius: BorderRadius.circular(8.r),
                   ),
                 ),
-                onPressed: authAsync is AsyncLoading ? null : loginUser,
-                child: authAsync is AsyncLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        'LOGIN',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
+                onPressed: loginUser,
+                child: const Text(
+                  'LOGIN',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 16),
 
-            // Fingerprint Button
             Container(
               width: 50.w,
               height: 50.h,
@@ -471,42 +434,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         ),
 
         SizedBox(height: 60.h),
-
-        // Footer Logo (ATCA PLANS)
-        // Column(
-        //   children: [
-        //     Icon(
-        //       Icons.all_inclusive,
-        //       color: Colors.pinkAccent.shade200,
-        //       size: 40,
-        //     ), // Placeholder icon
-        //     Text(
-        //       'ATCA',
-        //       style: TextStyle(
-        //         color: Colors.pinkAccent.shade200,
-        //         fontSize: 24,
-        //         fontWeight: FontWeight.bold,
-        //         letterSpacing: 2,
-        //       ),
-        //     ),
-        //     const Text(
-        //       'PLANS',
-        //       style: TextStyle(
-        //         color: Color(0xFF4A368C),
-        //         fontWeight: FontWeight.bold,
-        //         letterSpacing: 4,
-        //       ),
-        //     ),
-        //     const Text(
-        //       "Everyone's covered",
-        //       style: TextStyle(
-        //         color: Color(0xFF4A368C),
-        //         fontSize: 10,
-        //         fontStyle: FontStyle.italic,
-        //       ),
-        //     ),
-        //   ],
-        // ),
       ],
     );
   }

@@ -19,7 +19,6 @@ class _TelemedicineConsentScreenState extends State<TelemedicineConsentScreen> {
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          // Header
           Container(
             color: kNavyBlue,
             child: SafeArea(

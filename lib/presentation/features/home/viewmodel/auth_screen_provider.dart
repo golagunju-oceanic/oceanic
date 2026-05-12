@@ -6,10 +6,10 @@ class AuthState {
   final bool obscureLoginPassword;
   final bool obscureSignUpPassword;
   final bool obscureConfirmPassword;
-  final String verificationMethod; // 'email' or 'sms'
+  final String verificationMethod; 
 
   AuthState({
-    this.isLoginView = false, // Starts on Sign Up as per the left image
+    this.isLoginView = false, 
     this.obscureLoginPassword = true,
     this.obscureSignUpPassword = true,
     this.obscureConfirmPassword = true,
@@ -58,5 +58,4 @@ class AuthViewModel extends Notifier<AuthState> {
   }
 }
 
-// The Riverpod provider for our ViewModel
 final authProvider = NotifierProvider<AuthViewModel, AuthState>(AuthViewModel.new);

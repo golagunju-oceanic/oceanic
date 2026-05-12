@@ -17,7 +17,6 @@ class OctodocScaffold extends StatelessWidget {
       backgroundColor: const Color(0xFFF5F6FA),
       body: Column(
         children: [
-          // Back to App button strip
           SafeArea(
             bottom: false,
             child: Padding(
@@ -47,7 +46,6 @@ class OctodocScaffold extends StatelessWidget {
               ),
             ),
           ),
-          // Powered by Octodoc
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),
             child: Row(
@@ -101,7 +99,7 @@ class OctodocScaffold extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                   ),
                 ],

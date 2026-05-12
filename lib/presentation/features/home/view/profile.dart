@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:oceanic/data/models/user_model.dart';
-import 'package:oceanic/data/repositories/providers/user_provider.dart';
-import 'package:oceanic/presentation/widgets/bottom_nav_bar.dart';
 import 'package:oceanic/presentation/widgets/drawer.dart';
 import 'package:oceanic/presentation/widgets/floating_app_bar.dart';
 
@@ -16,64 +13,59 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final ScrollController _scrollController = ScrollController();
   @override
   Widget build(BuildContext context) {
-    final userAsync = ref.watch(authAsyncProvider);
     return Scaffold(
       drawer: CustomDrawer(),
       backgroundColor: const Color(0xFFF4F6FB),
-      body: userAsync.when(
-        data: (user) => SafeArea(
-          child: Stack(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 70),
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        controller: _scrollController,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 16,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'My Card',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1A1A2E),
-                              ),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 70),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'My Card',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1A1A2E),
                             ),
-                            const SizedBox(height: 20),
-                            _buildSelfSection(user),
-                            const SizedBox(height: 24),
-                            _buildMemberCard(user),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(height: 20),
+                          _buildSelfSection(),
+                          const SizedBox(height: 24),
+                          _buildMemberCard(),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              FloatingAppBar(
-                scrollController: _scrollController,
-                username: user?.username ?? 'User',
-              ),
-            ],
-          ),
+            ),
+            FloatingAppBar(
+              scrollController: _scrollController,
+              username: 'User',
+            ),
+          ],
         ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, st) => Center(child: Text('Error loading profile')),
       ),
 
       // bottomNavigationBar: CustomBottomNavBar(),
     );
   }
 
-  Widget _buildSelfSection(UserModel? user) {
+  Widget _buildSelfSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -87,7 +79,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             const SizedBox(width: 14),
             Text(
-              user?.username ?? 'User',
+              'User',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -129,14 +121,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildMemberCard(UserModel? user) {
+  Widget _buildMemberCard() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, 6),
           ),
@@ -206,9 +198,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _buildInfoField('NAME', user?.username ?? 'User'),
+                      _buildInfoField('NAME', 'User'),
                       const SizedBox(height: 12),
-                      _buildInfoField('I.D NUMBER', user?.memberId ?? 'null'),
+                      _buildInfoField('I.D NUMBER', 'null'),
                       const SizedBox(height: 12),
                       _buildInfoField('PLAN', 'AQUA SINGLE'),
                       const SizedBox(height: 12),
@@ -363,49 +355,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         const Text(
           'Authorized Signature',
           style: TextStyle(fontSize: 10, color: Color(0xFF2C2F7A)),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBottomNav() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildNavItem(Icons.home_outlined, 'Home', false),
-          _buildNavItem(Icons.location_on_outlined, 'Providers', false),
-          _buildNavItem(Icons.badge_outlined, 'Member Cards', true),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label, bool active) {
-    final color = active ? const Color(0xFF2C2F7A) : Colors.grey;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: color, size: 24),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            color: color,
-            fontWeight: active ? FontWeight.w600 : FontWeight.normal,
-          ),
         ),
       ],
     );

@@ -164,7 +164,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      accentPrimary.withOpacity(topGlowOpacity),
+                      accentPrimary.withValues(alpha: topGlowOpacity),
                       Colors.transparent,
                     ],
                   ),
@@ -183,7 +183,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      accentSecondary.withOpacity(bottomGlowOpacity),
+                      accentSecondary.withValues(alpha: bottomGlowOpacity),
                       Colors.transparent,
                     ],
                   ),
@@ -202,10 +202,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        // Pulsing ring
                         AnimatedBuilder(
                           animation: _ringController,
-                          builder: (_, __) => Opacity(
+                          builder: (_, _) => Opacity(
                             opacity: _ringOpacity.value,
                             child: Transform.scale(
                               scale: _ringScale.value,
@@ -227,28 +226,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                         // Logo circle
                         AnimatedBuilder(
                           animation: _logoController,
-                          builder: (_, __) => Opacity(
+                          builder: (_, _) => Opacity(
                             opacity: _logoOpacity.value,
                             child: Transform.scale(
                               scale: _logoScale.value,
-                              child: Container(
+                              child: SizedBox(
                                 width: 500.r,
                                 height: 500.r,
-                                // decoration: BoxDecoration(
-                                //   shape: BoxShape.circle,
-                                //   gradient: LinearGradient(
-                                //     begin: Alignment.topLeft,
-                                //     end: Alignment.bottomRight,
-                                //     colors: [accentPrimary, accentSecondary],
-                                //   ),
-                                //   boxShadow: [
-                                //     BoxShadow(
-                                //       color: logoShadowColor.withOpacity(0.3),
-                                //       blurRadius: 30,
-                                //       spreadRadius: 5,
-                                //     ),
-                                //   ],
-                                // ),
                                 child: Image.asset('assets/images/OIP.webp'),
                               ),
                             ),
@@ -260,7 +244,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
                   const SizedBox(height: 36),
 
-                  // App name
+  
                   SlideTransition(
                     position: _textSlide,
                     child: FadeTransition(

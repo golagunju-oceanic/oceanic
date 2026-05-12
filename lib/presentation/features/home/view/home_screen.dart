@@ -1,15 +1,14 @@
-import 'package:flutter/gestures.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:oceanic/core/constants/app_colors.dart';
-import 'package:oceanic/data/repositories/providers/user_provider.dart';
 import 'package:oceanic/presentation/features/home/view/authorization_screen.dart';
-import 'package:oceanic/presentation/features/home/view/find_provider.dart';
+
+import 'package:oceanic/presentation/features/home/view/health_provider.dart';
 import 'package:oceanic/presentation/features/home/view/health_record.dart';
 import 'package:oceanic/presentation/features/home/view/medical_request.dart';
 import 'package:oceanic/presentation/features/home/view/policy_details.dart';
 import 'package:oceanic/presentation/features/home/view/telemedicine.dart';
-import 'package:oceanic/presentation/widgets/bottom_nav_bar.dart';
 import 'package:oceanic/presentation/widgets/drawer.dart';
 import 'package:oceanic/presentation/widgets/floating_app_bar.dart';
 
@@ -23,9 +22,32 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _currentBanner = 0;
 
+  final PageController _pageController = PageController();
+  Timer? _bannerTimer;
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => _startBannerTimer());
+  }
+
+  void _startBannerTimer() {
+    _bannerTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!_pageController.hasClients) return;
+      final nextPage = (_currentBanner + 1) % _banners.length;
+      _pageController.animateToPage(
+        nextPage,
+        duration: const Duration(milliseconds: 800),
+        curve: Curves.easeInOutQuart,
+      );
+    });
+  }
+
   final ScrollController _scrollController = ScrollController();
   @override
   void dispose() {
+    _bannerTimer?.cancel();
+    _pageController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -91,13 +113,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       'title': 'Find a Provider',
       'subtitle': 'Locate healthcare providers',
       'color': Color(0xFFFFA726),
-      'route': const FindProvider(),
+      'route': const HealthProvider(),
     },
   ];
 
   @override
   Widget build(BuildContext context) {
-    final userAsync = ref.watch(authAsyncProvider);
+    // final userAsync = ref.watch(authAsyncProvider);
     final screenHeight = MediaQuery.of(context).size.height;
     final topPadding = MediaQuery.of(context).padding.top;
     return Container(
@@ -107,94 +129,92 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Container(color: Colors.white, height: topPadding),
           Expanded(
             child: Scaffold(
-              endDrawer: CustomDrawer(),
+              drawer: CustomDrawer(),
               backgroundColor: Colors.white,
-              body: userAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, _) => Center(child: Text(error.toString())),
-                data: (user) => Stack(
-                  children: [
-                    SingleChildScrollView(
-                      controller: _scrollController,
-                      // dragStartBehavior: DragStartBehavior.start,
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.only(top: 80),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                            child: Text(
-                              'Sustaining your peace',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w500,
-                              ),
+              body: Stack(
+                children: [
+                  SingleChildScrollView(
+                    controller: _scrollController,
+                    // dragStartBehavior: DragStartBehavior.start,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.only(top: 80),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                          child: Text(
+                            'Sustaining your peace',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                          SizedBox(
-                            height: screenHeight * 0.25,
-                            child: Stack(
-                              children: [
-                                PageView.builder(
-                                  itemCount: _banners.length,
-                                  onPageChanged: (i) =>
-                                      setState(() => _currentBanner = i),
-                                  itemBuilder: (_, i) =>
-                                      _buildBanner(_banners[i], screenHeight),
-                                ),
-                                Positioned(
-                                  bottom: 8,
-                                  left: 0,
-                                  right: 0,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: List.generate(
-                                      _banners.length,
-                                      (i) => Container(
-                                        margin: const EdgeInsets.symmetric(
-                                          horizontal: 3,
-                                        ),
-                                        width: _currentBanner == i ? 10 : 8,
-                                        height: _currentBanner == i ? 10 : 8,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: _currentBanner == i
-                                              ? kNavyBlue
-                                              : Colors.grey.shade400,
-                                        ),
+                        ),
+                        SizedBox(
+                          height: screenHeight * 0.25,
+                          child: Stack(
+                            children: [
+                              PageView.builder(
+                                controller: _pageController,
+                                itemCount: _banners.length,
+                                onPageChanged: (i) =>
+                                    setState(() => _currentBanner = i),
+                                itemBuilder: (_, i) =>
+                                    _buildBanner(_banners[i], screenHeight),
+                              ),
+                              Positioned(
+                                bottom: 8,
+                                left: 0,
+                                right: 0,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: List.generate(
+                                    _banners.length,
+                                    (i) => Container(
+                                      margin: const EdgeInsets.symmetric(
+                                        horizontal: 3,
+                                      ),
+                                      width: _currentBanner == i ? 10 : 8,
+                                      height: _currentBanner == i ? 10 : 8,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: _currentBanner == i
+                                            ? kNavyBlue
+                                            : Colors.grey.shade400,
                                       ),
                                     ),
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 16),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Column(
-                              children: _menuItems
-                                  .map((item) => _buildMenuItem(context, item))
-                                  .toList(),
-                            ),
+                        ),
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            children: _menuItems
+                                .map((item) => _buildMenuItem(context, item))
+                                .toList(),
                           ),
-                          const SizedBox(height: 16),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                     ),
+                  ),
 
-                    // --- Floating App Bar ---
-                    FloatingAppBar(
-                      scrollController: _scrollController,
-                      username: user?.username ?? 'User',
-                    ),
-                  ],
-                ),
+                  // --- Floating App Bar ---
+                  FloatingAppBar(
+                    scrollController: _scrollController,
+                    username: 'User',
+                  ),
+                ],
               ),
-              // bottomNavigationBar: CustomBottomNavBar(),
             ),
+            // bottomNavigationBar: CustomBottomNavBar(),
           ),
+
           // Container(color: kNavyBlue, height: bottomPadding),
         ],
       ),
@@ -217,7 +237,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 image: Image.asset(banner['image']!).image,
                 fit: BoxFit.cover,
                 colorFilter: ColorFilter.mode(
-                  Colors.black.withOpacity(0.3),
+                  Colors.black.withValues(alpha: 0.3),
                   BlendMode.darken,
                 ),
               ),
@@ -247,7 +267,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               constraints: const BoxConstraints(maxWidth: 230),
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: kTeal.withOpacity(0.8),
+                color: kTeal.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
@@ -283,7 +303,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -303,7 +323,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           width: 46,
           height: 46,
           decoration: BoxDecoration(
-            color: (item['color'] as Color).withOpacity(0.12),
+            color: (item['color'] as Color).withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
@@ -326,69 +346,3 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 }
-
-// --- Reusable floating bar action button ---
-// class _FloatingNavAction extends StatelessWidget {
-//   final IconData icon;
-//   final bool isScrolled;
-//   final VoidCallback onTap;
-//   final int badgeCount;
-
-//   const _FloatingNavAction({
-//     required this.icon,
-//     required this.isScrolled,
-//     required this.onTap,
-//     this.badgeCount = 0,
-//   });
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return GestureDetector(
-//       onTap: onTap,
-//       child: Stack(
-//         clipBehavior: Clip.none,
-//         children: [
-//           AnimatedContainer(
-//             duration: const Duration(milliseconds: 200),
-//             width: 36,
-//             height: 36,
-//             decoration: BoxDecoration(
-//               color: isScrolled
-//                   ? Colors.white.withOpacity(0.15)
-//                   : kNavyBlue.withOpacity(0.08),
-//               borderRadius: BorderRadius.circular(10),
-//             ),
-//             child: Icon(
-//               icon,
-//               color: isScrolled ? Colors.white : kNavyBlue,
-//               size: 20,
-//             ),
-//           ),
-//           if (badgeCount > 0)
-//             Positioned(
-//               top: -4,
-//               right: -4,
-//               child: Container(
-//                 width: 16,
-//                 height: 16,
-//                 decoration: const BoxDecoration(
-//                   color: Color(0xFFE74C3C),
-//                   shape: BoxShape.circle,
-//                 ),
-//                 child: Center(
-//                   child: Text(
-//                     '$badgeCount',
-//                     style: const TextStyle(
-//                       color: Colors.white,
-//                       fontSize: 9,
-//                       fontWeight: FontWeight.bold,
-//                     ),
-//                   ),
-//                 ),
-//               ),
-//             ),
-//         ],
-//       ),
-//     );
-//   }
-// }

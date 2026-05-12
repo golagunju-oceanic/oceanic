@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:oceanic/core/constants/app_colors.dart';
 import 'package:oceanic/presentation/features/home/view/Profile.dart';
 import 'package:oceanic/presentation/features/home/view/home_screen.dart';
-import 'package:oceanic/presentation/features/home/view/telemedicine.dart';
+import 'package:oceanic/presentation/features/home/view/reimbursement.dart';
 
 class CustomBottomNavBar extends StatefulWidget {
   const CustomBottomNavBar({super.key});
@@ -19,11 +19,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
-        children: const [
-          HomeScreen(),
-          TelemedicineConsentScreen(),
-          ProfileScreen(),
-        ],
+        children: const [HomeScreen(), ReimbursementScreen(), ProfileScreen()],
       ),
       bottomNavigationBar: CurvedNavigationBar(
         index: _selectedIndex,
@@ -33,9 +29,9 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
         animationCurve: Curves.easeInOut,
         animationDuration: const Duration(milliseconds: 300),
         items: const [
-          Icon(Icons.home_outlined, size: 30, color: kDarkTextOnPrimary),
-          Icon(Icons.video_call_outlined, size: 30, color: kDarkTextOnPrimary),
-          Icon(Icons.person_outline, size: 30, color: kDarkTextOnPrimary),
+          Icon(Icons.home, size: 30, color: kDarkTextOnPrimary),
+          Icon(Icons.location_pin, size: 30, color: kDarkTextOnPrimary),
+          Icon(Icons.person, size: 30, color: kDarkTextOnPrimary),
         ],
         onTap: (index) {
           setState(() {

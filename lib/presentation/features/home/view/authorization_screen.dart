@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:oceanic/data/repositories/providers/user_provider.dart';
+
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:oceanic/presentation/widgets/drawer.dart';
 
@@ -9,7 +9,6 @@ class AuthorizationScreen extends ConsumerStatefulWidget {
   @override
   ConsumerState<AuthorizationScreen> createState() =>
       _AuthorizationScreenState();
-  // ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _AuthorizationScreenState extends ConsumerState<AuthorizationScreen> {
@@ -75,98 +74,87 @@ class _AuthorizationScreenState extends ConsumerState<AuthorizationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userAsync = ref.watch(authAsyncProvider);
     return Scaffold(
       endDrawer: CustomDrawer(),
       appBar: AppBar(
         // height: 10,
         title: const Text('Authorization'),
       ),
-      body: userAsync.when(
-        data: (user) => Stack(
-          children: [
-            Column(
-              children: [
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: _pickDateRange,
-                      child: Container(
-                        margin: EdgeInsets.only(left: 20.w),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 12.w,
-                          vertical: 8.h,
-                        ),
-                        width: 180.w,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(6.r),
-                          border: Border.all(color: Colors.grey[400]!),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.calendar_today, size: 18.r),
-                            SizedBox(width: 8.w),
-                            Expanded(
-                              child: Text(
-                                _selectedDateRange == null
-                                    ? 'Select dates'
-                                    : '${_formatDate(_selectedDateRange!.start)} - ${_formatDate(_selectedDateRange!.end)}',
-                                style: TextStyle(fontSize: 11.sp),
-                                overflow: TextOverflow.ellipsis,
-                              ),
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: _pickDateRange,
+                    child: Container(
+                      margin: EdgeInsets.only(left: 20.w),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12.w,
+                        vertical: 8.h,
+                      ),
+                      width: 180.w,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(6.r),
+                        border: Border.all(color: Colors.grey[400]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.calendar_today, size: 18.r),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: Text(
+                              _selectedDateRange == null
+                                  ? 'Select dates'
+                                  : '${_formatDate(_selectedDateRange!.start)} - ${_formatDate(_selectedDateRange!.end)}',
+                              style: TextStyle(fontSize: 11.sp),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
-                    SizedBox(width: 16.w),
-                    ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF3F3A8A),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 20.w,
-                          vertical: 5.h,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.r),
-                        ),
-                      ),
-                      child: Text(
-                        "Search",
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                Expanded(
-                  child: ListView.builder(
-                    itemBuilder: (context, index) =>
-                        _card(authorizations, index),
-                    itemCount: authorizations.length,
                   ),
+                  SizedBox(width: 16.w),
+                  ElevatedButton(
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF3F3A8A),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 20.w,
+                        vertical: 5.h,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.r),
+                      ),
+                    ),
+                    child: Text(
+                      "Search",
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemBuilder: (context, index) => _card(authorizations, index),
+                  itemCount: authorizations.length,
                 ),
-              ],
-            ),
-            // FloatingAppBar(
-            //   scrollController: _scrollController,
-            //   username: user?.username ?? 'User',
-            // ),
-          ],
-        ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text(error.toString())),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
-// card for each authorization request
 Widget? _card(List<Map<String, dynamic>> authorizations, int index) {
   final auth = authorizations[index];
   return Card(
@@ -188,7 +176,6 @@ Widget? _card(List<Map<String, dynamic>> authorizations, int index) {
           Row(
             children: [
               Container(
-                // padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                 decoration: BoxDecoration(
                   color: auth['status'] == 'APPROVED'
                       ? Colors.green
