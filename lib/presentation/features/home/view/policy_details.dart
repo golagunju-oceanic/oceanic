@@ -16,63 +16,63 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Policy Details')),
       endDrawer: CustomDrawer(),
-      backgroundColor: const Color(0xFFF2F2F7),
+      backgroundColor: scheme.surface,
       body: Padding(
         padding: const EdgeInsets.only(top: 20),
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: const Text(
-                      'Policy Details',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1C1C1E),
-                      ),
-                    ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Text(
+                  'Policy Details',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: scheme.onSurface,
                   ),
-                  const SizedBox(height: 16),
-                  _buildPolicySummaryCard(),
-                  const SizedBox(height: 12),
-                  _buildExpandableCard(
-                    title: 'View Beneficiaries',
-                    isExpanded: _beneficiariesExpanded,
-                    onTap: () => setState(
-                      () => _beneficiariesExpanded = !_beneficiariesExpanded,
-                    ),
-                    content: _buildBeneficiariesContent(),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildExpandableCard(
-                    title: 'View list of Benefits',
-                    isExpanded: _benefitsExpanded,
-                    onTap: () =>
-                        setState(() => _benefitsExpanded = !_benefitsExpanded),
-                    content: _buildBenefitsContent(),
-                  ),
-                  const SizedBox(height: 24),
-                ],
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              _buildPolicySummaryCard(scheme),
+              const SizedBox(height: 12),
+              _buildExpandableCard(
+                scheme: scheme,
+                title: 'View Beneficiaries',
+                isExpanded: _beneficiariesExpanded,
+                onTap: () => setState(
+                  () => _beneficiariesExpanded = !_beneficiariesExpanded,
+                ),
+                content: _buildBeneficiariesContent(scheme),
+              ),
+              const SizedBox(height: 12),
+              _buildExpandableCard(
+                scheme: scheme,
+                title: 'View list of Benefits',
+                isExpanded: _benefitsExpanded,
+                onTap: () =>
+                    setState(() => _benefitsExpanded = !_benefitsExpanded),
+                content: _buildBenefitsContent(scheme),
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildPolicySummaryCard() {
+  Widget _buildPolicySummaryCard(ColorScheme scheme) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.surfaceContainer,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -86,34 +86,34 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Policy Summary',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1C1C1E),
+              color: scheme.onSurface,
             ),
           ),
           const SizedBox(height: 16),
-          _buildPolicyRow('Policy Holder', 'User'),
-          _buildDivider(),
-          _buildPolicyRow('Policy Type', 'Group'),
-          _buildDivider(),
-          _buildPolicyRow('Plan', 'AQUA SINGLE'),
-          _buildDivider(),
-          _buildPolicyRow('Network', 'TIER 4'),
-          _buildDivider(),
-          _buildStatusRow(),
-          _buildDivider(),
-          _buildPolicyRow('Effective Date', '01-01-2026'),
-          _buildDivider(),
-          _buildPolicyRow('Expiry Date', '31-12-2026'),
+          _buildPolicyRow('Policy Holder', 'User', scheme),
+          _buildDivider(scheme),
+          _buildPolicyRow('Policy Type', 'Group', scheme),
+          _buildDivider(scheme),
+          _buildPolicyRow('Plan', 'AQUA SINGLE', scheme),
+          _buildDivider(scheme),
+          _buildPolicyRow('Network', 'TIER 4', scheme),
+          _buildDivider(scheme),
+          _buildStatusRow(scheme),
+          _buildDivider(scheme),
+          _buildPolicyRow('Effective Date', '01-01-2026', scheme),
+          _buildDivider(scheme),
+          _buildPolicyRow('Expiry Date', '31-12-2026', scheme),
         ],
       ),
     );
   }
 
-  Widget _buildPolicyRow(String label, String value) {
+  Widget _buildPolicyRow(String label, String value, ColorScheme scheme) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -121,14 +121,17 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
         children: [
           Text(
             label,
-            style: const TextStyle(fontSize: 14, color: Color(0xFF8E8E93)),
+            style: TextStyle(
+              fontSize: 14,
+              color: scheme.onSurface.withValues(alpha: 0.5),
+            ),
           ),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1C1C1E),
+              color: scheme.onSurface,
             ),
           ),
         ],
@@ -136,20 +139,23 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
     );
   }
 
-  Widget _buildStatusRow() {
+  Widget _buildStatusRow(ColorScheme scheme) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
+          Text(
             'Status',
-            style: TextStyle(fontSize: 14, color: Color(0xFF8E8E93)),
+            style: TextStyle(
+              fontSize: 14,
+              color: scheme.onSurface.withValues(alpha: 0.5),
+            ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFFD4EDDA),
+              color: const Color(0xFF28A745).withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Text(
@@ -166,11 +172,12 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
     );
   }
 
-  Widget _buildDivider() {
-    return const Divider(height: 1, color: Color(0xFFF2F2F7));
+  Widget _buildDivider(ColorScheme scheme) {
+    return Divider(height: 1, color: scheme.onSurface.withValues(alpha: 0.08));
   }
 
   Widget _buildExpandableCard({
+    required ColorScheme scheme,
     required String title,
     required bool isExpanded,
     required VoidCallback onTap,
@@ -178,7 +185,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.surfaceContainer,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -200,18 +207,18 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF1C1C1E),
+                      color: scheme.onSurface,
                     ),
                   ),
                   AnimatedRotation(
                     turns: isExpanded ? 0.5 : 0,
                     duration: const Duration(milliseconds: 250),
-                    child: const Icon(
+                    child: Icon(
                       Icons.keyboard_arrow_down,
-                      color: Color(0xFF8E8E93),
+                      color: scheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ),
                 ],
@@ -233,7 +240,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
     );
   }
 
-  Widget _buildBeneficiariesContent() {
+  Widget _buildBeneficiariesContent(ColorScheme scheme) {
     final beneficiaries = [
       {'name': 'Ganiyu Ayodele Olagunju', 'relation': 'Primary'},
     ];
@@ -243,20 +250,24 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
           .map(
             (b) => ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const CircleAvatar(
-                backgroundColor: Color(0xFFE8E8F0),
-                child: Icon(Icons.person, color: Color(0xFF2D2D7F), size: 20),
+              leading: CircleAvatar(
+                backgroundColor: scheme.primary.withValues(alpha: 0.12),
+                child: Icon(Icons.person, color: scheme.primary, size: 20),
               ),
               title: Text(
                 b['name']!,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
+                  color: scheme.onSurface,
                 ),
               ),
               subtitle: Text(
                 b['relation']!,
-                style: const TextStyle(fontSize: 12, color: Color(0xFF8E8E93)),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: scheme.onSurface.withValues(alpha: 0.5),
+                ),
               ),
             ),
           )
@@ -264,7 +275,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
     );
   }
 
-  Widget _buildBenefitsContent() {
+  Widget _buildBenefitsContent(ColorScheme scheme) {
     final benefits = [
       'Outpatient Consultation',
       'Laboratory Tests',
@@ -289,10 +300,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                   const SizedBox(width: 10),
                   Text(
                     b,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF1C1C1E),
-                    ),
+                    style: TextStyle(fontSize: 14, color: scheme.onSurface),
                   ),
                 ],
               ),

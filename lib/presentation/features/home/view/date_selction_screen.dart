@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:oceanic/core/constants/app_colors.dart';
 import 'package:oceanic/presentation/features/home/view/doctor_details_screen.dart';
 import 'package:oceanic/presentation/widgets/octodoc_scaffold.dart';
 
@@ -11,7 +10,7 @@ class DateSelectionScreen extends StatefulWidget {
 }
 
 class _DateSelectionScreenState extends State<DateSelectionScreen> {
-  int _selectedDayIndex = 3; // THU
+  int _selectedDayIndex = 3;
   String? _selectedTime;
 
   final List<Map<String, String>> _days = [
@@ -33,6 +32,8 @@ class _DateSelectionScreenState extends State<DateSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return OctodocScaffold(
       currentStep: 2,
       child: Padding(
@@ -40,32 +41,43 @@ class _DateSelectionScreenState extends State<DateSelectionScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Select Date',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 fontStyle: FontStyle.italic,
+                color: scheme.onSurface,
               ),
             ),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Icon(Icons.chevron_left, color: Colors.grey),
-                const Text(
-                  'MAY 2025',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                Icon(
+                  Icons.chevron_left,
+                  color: scheme.onSurface.withValues(alpha: 0.4),
                 ),
-                const Icon(Icons.chevron_right, color: Colors.grey),
+                Text(
+                  'MAY 2025',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: scheme.onSurface,
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right,
+                  color: scheme.onSurface.withValues(alpha: 0.4),
+                ),
               ],
             ),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: List.generate(
-                _days.length,
-                (i) => GestureDetector(
+              children: List.generate(_days.length, (i) {
+                final selected = _selectedDayIndex == i;
+                return GestureDetector(
                   onTap: () => setState(() => _selectedDayIndex = i),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -73,12 +85,14 @@ class _DateSelectionScreenState extends State<DateSelectionScreen> {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: _selectedDayIndex == i ? kTeal : Colors.white,
+                      color: selected
+                          ? scheme.secondary
+                          : scheme.surfaceContainer,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: _selectedDayIndex == i
-                            ? kTeal
-                            : Colors.grey.shade300,
+                        color: selected
+                            ? scheme.secondary
+                            : scheme.onSurface.withValues(alpha: 0.12),
                       ),
                     ),
                     child: Column(
@@ -86,9 +100,9 @@ class _DateSelectionScreenState extends State<DateSelectionScreen> {
                         Text(
                           _days[i]['day']!,
                           style: TextStyle(
-                            color: _selectedDayIndex == i
-                                ? Colors.white
-                                : Colors.grey,
+                            color: selected
+                                ? scheme.onSecondary
+                                : scheme.onSurface.withValues(alpha: 0.5),
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                           ),
@@ -97,9 +111,9 @@ class _DateSelectionScreenState extends State<DateSelectionScreen> {
                         Text(
                           _days[i]['date']!,
                           style: TextStyle(
-                            color: _selectedDayIndex == i
-                                ? Colors.white
-                                : Colors.black87,
+                            color: selected
+                                ? scheme.onSecondary
+                                : scheme.onSurface,
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
@@ -107,18 +121,19 @@ class _DateSelectionScreenState extends State<DateSelectionScreen> {
                       ],
                     ),
                   ),
-                ),
-              ),
+                );
+              }),
             ),
             const SizedBox(height: 4),
-            Divider(color: Colors.grey.shade300),
+            Divider(color: scheme.onSurface.withValues(alpha: 0.1)),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Select Time',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 fontStyle: FontStyle.italic,
+                color: scheme.onSurface,
               ),
             ),
             const SizedBox(height: 12),
@@ -129,37 +144,34 @@ class _DateSelectionScreenState extends State<DateSelectionScreen> {
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
               childAspectRatio: 3.5,
-              children: _times
-                  .map(
-                    (t) => GestureDetector(
-                      onTap: () => setState(() => _selectedTime = t),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: _selectedTime == t
-                              ? kTeal.withValues(alpha: 0.15)
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: _selectedTime == t
-                                ? kTeal
-                                : Colors.grey.shade300,
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            t,
-                            style: TextStyle(
-                              color: _selectedTime == t
-                                  ? kTeal
-                                  : Colors.black87,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+              children: _times.map((t) {
+                final selected = _selectedTime == t;
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedTime = t),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? scheme.secondary.withValues(alpha: 0.15)
+                          : scheme.surfaceContainer,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: selected
+                            ? scheme.secondary
+                            : scheme.onSurface.withValues(alpha: 0.12),
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        t,
+                        style: TextStyle(
+                          color: selected ? scheme.secondary : scheme.onSurface,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
-                  )
-                  .toList(),
+                  ),
+                );
+              }).toList(),
             ),
             const SizedBox(height: 20),
             SizedBox(
@@ -174,10 +186,14 @@ class _DateSelectionScreenState extends State<DateSelectionScreen> {
                       )
                     : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _selectedTime != null
-                      ? kTeal
-                      : kTeal.withValues(alpha: 0.4),
-                  foregroundColor: Colors.white,
+                  backgroundColor: scheme.secondary,
+                  foregroundColor: scheme.onSecondary,
+                  disabledBackgroundColor: scheme.onSurface.withValues(
+                    alpha: 0.12,
+                  ),
+                  disabledForegroundColor: scheme.onSurface.withValues(
+                    alpha: 0.38,
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   elevation: 0,
                   shape: RoundedRectangleBorder(

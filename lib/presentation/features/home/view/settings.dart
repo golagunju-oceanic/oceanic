@@ -12,15 +12,15 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   bool _pushNotifications = false;
 
-  static const _navy = Color(0xFF2D2D8E);
-  static const _navyLight = Color(0xFFEEEEF8);
-  static const _danger = Color(0xFFD32F2F);
-  static const _dangerLight = Color(0xFFFDECEC);
-
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    final navyBg = scheme.primary.withValues(alpha: 0.1);
+    final dangerBg = scheme.error.withValues(alpha: 0.1);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
+      backgroundColor: scheme.surface,
       body: Column(
         children: [
           _Header(),
@@ -34,26 +34,27 @@ class _SettingsPageState extends State<SettingsPage> {
                   children: [
                     _SettingsTile(
                       icon: CupertinoIcons.person_fill,
-                      iconBg: _navyLight,
-                      iconColor: _navy,
+                      iconBg: navyBg,
+                      iconColor: scheme.primary,
                       label: 'Profile',
                       onTap: () {},
                     ),
                     _Divider(),
                     _SettingsTile(
                       icon: CupertinoIcons.lock_fill,
-                      iconBg: _navyLight,
-                      iconColor: _navy,
+                      iconBg: navyBg,
+                      iconColor: scheme.primary,
                       label: 'Change Password',
                       onTap: () {},
                     ),
                     _Divider(),
                     _ToggleTile(
                       icon: CupertinoIcons.bell_fill,
-                      iconBg: _navyLight,
-                      iconColor: _navy,
+                      iconBg: navyBg,
+                      iconColor: scheme.primary,
                       label: 'Push Notifications',
                       value: _pushNotifications,
+                      activeColor: scheme.primary,
                       onChanged: (v) => setState(() => _pushNotifications = v),
                     ),
                   ],
@@ -65,17 +66,17 @@ class _SettingsPageState extends State<SettingsPage> {
                   children: [
                     _SettingsTile(
                       icon: CupertinoIcons.person_badge_minus_fill,
-                      iconBg: _dangerLight,
-                      iconColor: _danger,
+                      iconBg: dangerBg,
+                      iconColor: scheme.error,
                       label: 'Delete Profile',
-                      labelColor: _danger,
+                      labelColor: scheme.error,
                       onTap: () => _confirmDelete(context),
                     ),
                     _Divider(),
                     _SettingsTile(
                       icon: CupertinoIcons.square_arrow_right_fill,
-                      iconBg: _navyLight,
-                      iconColor: _navy,
+                      iconBg: navyBg,
+                      iconColor: scheme.primary,
                       label: 'Logout',
                       onTap: () => _confirmLogout(context),
                     ),
@@ -87,7 +88,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     'Version 1.0.0',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[400],
+                      color: scheme.onSurface.withValues(alpha: 0.35),
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -101,53 +102,34 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _confirmDelete(BuildContext context) {
-    // showDialog(
-    //   context: context,
-    //   builder: (_) => AlertDialog(
-    //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-    //     title: const Text('Delete Profile'),
-    //     content: const Text(
-    //       'This action is permanent and cannot be undone. Are you sure?',
-    //     ),
-    //     actions: [
-    //       TextButton(
-    //         onPressed: () => Navigator.pop(context),
-    //         child: const Text('Cancel'),
-    //       ),
-    //       TextButton(
-    //         onPressed: () => Navigator.pop(context),
-    //         child: const Text(
-    //           'Delete',
-    //           style: TextStyle(color: Color(0xFFD32F2F)),
-    //         ),
-    //       ),
-    //     ],
-    //   ),
-    // );
-
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (context) => DeleteProfilePage()));
   }
 
   void _confirmLogout(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
+        backgroundColor: scheme.surfaceContainer,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to log out?'),
+        title: Text('Logout', style: TextStyle(color: scheme.onSurface)),
+        content: Text(
+          'Are you sure you want to log out?',
+          style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.7)),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.6)),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Logout',
-              style: TextStyle(color: Color(0xFF2D2D8E)),
-            ),
+            child: Text('Logout', style: TextStyle(color: scheme.primary)),
           ),
         ],
       ),
@@ -156,14 +138,14 @@ class _SettingsPageState extends State<SettingsPage> {
 }
 
 class _Header extends StatelessWidget {
-  static const _navy = Color(0xFF2D2D8E);
-
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Container(
-      decoration: const BoxDecoration(
-        color: _navy,
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        color: scheme.primary,
+        borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(28),
           bottomRight: Radius.circular(28),
         ),
@@ -178,12 +160,12 @@ class _Header extends StatelessWidget {
                 icon: CupertinoIcons.chevron_left,
                 onTap: () => Navigator.maybePop(context),
               ),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Settings',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white,
+                    color: scheme.onPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.3,
@@ -210,22 +192,22 @@ class _CircleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha:0.15),
+          color: scheme.onPrimary.withValues(alpha: 0.15),
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, color: Colors.white, size: 18),
+        child: Icon(icon, color: scheme.onPrimary, size: 18),
       ),
     );
   }
 }
-
-// ── Section label ─────────────────────────────────────────────────────────────
 
 class _SectionLabel extends StatelessWidget {
   final String text;
@@ -233,14 +215,16 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Padding(
       padding: const EdgeInsets.only(left: 4),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w700,
-          color: Color(0xFF2D2D8E),
+          color: scheme.primary,
           letterSpacing: 0.8,
         ),
       ),
@@ -248,21 +232,21 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-// ── Card container ────────────────────────────────────────────────────────────
-
 class _SettingsCard extends StatelessWidget {
   final List<Widget> children;
   const _SettingsCard({required this.children});
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.surfaceContainer,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha:0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -272,8 +256,6 @@ class _SettingsCard extends StatelessWidget {
     );
   }
 }
-
-// ── Tile variants ─────────────────────────────────────────────────────────────
 
 class _SettingsTile extends StatelessWidget {
   final IconData icon;
@@ -294,6 +276,8 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -309,14 +293,14 @@ class _SettingsTile extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
-                  color: labelColor ?? Colors.black87,
+                  color: labelColor ?? scheme.onSurface,
                 ),
               ),
             ),
             Icon(
               CupertinoIcons.chevron_right,
               size: 16,
-              color: Colors.grey[400],
+              color: scheme.onSurface.withValues(alpha: 0.35),
             ),
           ],
         ),
@@ -331,6 +315,7 @@ class _ToggleTile extends StatelessWidget {
   final Color iconColor;
   final String label;
   final bool value;
+  final Color activeColor;
   final ValueChanged<bool> onChanged;
 
   const _ToggleTile({
@@ -339,11 +324,14 @@ class _ToggleTile extends StatelessWidget {
     required this.iconColor,
     required this.label,
     required this.value,
+    required this.activeColor,
     required this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
@@ -353,25 +341,23 @@ class _ToggleTile extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: Colors.black87,
+                color: scheme.onSurface,
               ),
             ),
           ),
           CupertinoSwitch(
             value: value,
             onChanged: onChanged,
-            activeTrackColor: const Color(0xFF2D2D8E),
+            activeTrackColor: activeColor,
           ),
         ],
       ),
     );
   }
 }
-
-// ── Shared pieces ─────────────────────────────────────────────────────────────
 
 class _IconBox extends StatelessWidget {
   final IconData icon;
@@ -397,11 +383,13 @@ class _IconBox extends StatelessWidget {
 class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Divider(
       height: 1,
       indent: 68,
       endIndent: 16,
-      color: Colors.grey[100],
+      color: scheme.onSurface.withValues(alpha: 0.06),
     );
   }
 }

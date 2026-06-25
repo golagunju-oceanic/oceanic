@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:oceanic/core/constants/app_colors.dart';
 
 class HealthProvider extends StatefulWidget {
   const HealthProvider({super.key});
@@ -30,13 +29,13 @@ class _HealthProviderState extends State<HealthProvider> {
     super.dispose();
   }
 
-  void _onSearchChanged(String value) {
-    setState(() => _searchQuery = value);
-  }
+  void _onSearchChanged(String value) => setState(() => _searchQuery = value);
 
   void _openFilter() {
+    final scheme = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
+      backgroundColor: scheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -46,20 +45,27 @@ class _HealthProviderState extends State<HealthProvider> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Filter Providers',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: scheme.onSurface,
+              ),
             ),
             const SizedBox(height: 16),
-            const Text('More filter options coming soon.'),
+            Text(
+              'More filter options coming soon.',
+              style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.7)),
+            ),
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: kNavyBlue,
-                  foregroundColor: Colors.white,
+                  backgroundColor: scheme.primary,
+                  foregroundColor: scheme.onPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
                   ),
@@ -75,152 +81,152 @@ class _HealthProviderState extends State<HealthProvider> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: kNavyBlue,
-        elevation: 1,
-        title: const Text('Network Provider'),
-        centerTitle: true,
-      ),
-      body: Column(
-        children: [
-          // _buildStatusBarSpacer(),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
-                  _buildTitle(),
-                  const SizedBox(height: 20),
-                  _buildSearchBar(),
-                  const SizedBox(height: 20),
-                  _buildToggleRow(),
-                  const SizedBox(height: 24),
-                  Expanded(child: _buildProviderList()),
-                ],
+      backgroundColor: scheme.surface,
+      appBar: AppBar(title: const Text('Network Provider'), centerTitle: true),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
+            Text(
+              'Network Provider',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: scheme.onSurface,
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTitle() {
-    return const Text(
-      'Network Provider',
-      style: TextStyle(
-        fontSize: 22,
-        fontWeight: FontWeight.w800,
-        color: Colors.black87,
-      ),
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: TextField(
-        controller: _searchController,
-        onChanged: _onSearchChanged,
-        decoration: InputDecoration(
-          hintText: 'Search',
-          hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 15),
-          prefixIcon: Icon(Icons.search, color: Colors.grey.shade500, size: 22),
-          suffixIcon: GestureDetector(
-            onTap: _openFilter,
-            child: Icon(Icons.filter_alt, color: Colors.black87, size: 22),
-          ),
-          filled: true,
-          fillColor: Colors.grey.shade100,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 14,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: kNavyBlue, width: 1.5),
-          ),
+            const SizedBox(height: 20),
+            _buildSearchBar(scheme),
+            const SizedBox(height: 20),
+            _buildToggleRow(scheme),
+            const SizedBox(height: 24),
+            Expanded(child: _buildProviderList(scheme)),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildToggleRow() {
+  Widget _buildSearchBar(ColorScheme scheme) {
+    return TextField(
+      controller: _searchController,
+      onChanged: _onSearchChanged,
+      style: TextStyle(color: scheme.onSurface),
+      decoration: InputDecoration(
+        hintText: 'Search',
+        hintStyle: TextStyle(
+          color: scheme.onSurface.withValues(alpha: 0.4),
+          fontSize: 15,
+        ),
+        prefixIcon: Icon(
+          Icons.search,
+          color: scheme.onSurface.withValues(alpha: 0.5),
+          size: 22,
+        ),
+        suffixIcon: GestureDetector(
+          onTap: _openFilter,
+          child: Icon(
+            Icons.filter_alt,
+            color: scheme.onSurface.withValues(alpha: 0.7),
+            size: 22,
+          ),
+        ),
+        filled: true,
+        fillColor: scheme.surfaceContainer,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: scheme.primary, width: 1.5),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildToggleRow(ColorScheme scheme) {
     return Row(
       children: [
         Switch(
           value: _showOutsideNetwork,
           onChanged: (v) => setState(() => _showOutsideNetwork = v),
-          activeThumbColor: kNavyBlue,
-          inactiveThumbColor: Colors.white,
-          inactiveTrackColor: Colors.grey.shade300,
+          activeColor: scheme.primary,
           trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
         ),
         const SizedBox(width: 8),
-        const Text(
+        Text(
           'Show providers outside my network',
-          style: TextStyle(fontSize: 14, color: Colors.black87),
+          style: TextStyle(
+            fontSize: 14,
+            color: scheme.onSurface.withValues(alpha: 0.8),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildProviderList() {
+  Widget _buildProviderList(ColorScheme scheme) {
     if (_filteredProviders.isEmpty) {
-      return _buildEmptyState();
+      return Center(
+        child: Text(
+          'No Available Providers',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: scheme.onSurface.withValues(alpha: 0.6),
+          ),
+        ),
+      );
     }
 
     return ListView.separated(
       itemCount: _filteredProviders.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
+      separatorBuilder: (_, __) =>
+          Divider(height: 1, color: scheme.onSurface.withValues(alpha: 0.08)),
       itemBuilder: (context, index) {
         final provider = _filteredProviders[index];
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(vertical: 8),
           leading: CircleAvatar(
-            backgroundColor: kNavyBlue.withValues(alpha: 0.1),
-            child: const Icon(Icons.local_hospital_outlined, color: kNavyBlue),
+            backgroundColor: scheme.primary.withValues(alpha: 0.1),
+            child: Icon(Icons.local_hospital_outlined, color: scheme.primary),
           ),
           title: Text(
             provider['name'] ?? '',
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              color: scheme.onSurface,
+            ),
           ),
           subtitle: Text(
             provider['address'] ?? '',
-            style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+            style: TextStyle(
+              color: scheme.onSurface.withValues(alpha: 0.5),
+              fontSize: 13,
+            ),
           ),
-          trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+          trailing: Icon(
+            Icons.chevron_right,
+            color: scheme.onSurface.withValues(alpha: 0.4),
+          ),
           onTap: () {},
         );
       },
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Text(
-        'No Available Providers',
-        style: TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-          color: Colors.black87,
-        ),
-      ),
     );
   }
 }

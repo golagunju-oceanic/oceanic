@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:oceanic/core/constants/app_colors.dart';
 import 'package:oceanic/presentation/widgets/drawer.dart';
+import 'package:oceanic/presentation/widgets/feedbsck_modal.dart';
 import 'package:oceanic/presentation/widgets/floating_app_bar.dart';
 
 class ReimbursementScreen extends StatefulWidget {
@@ -61,6 +61,7 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
   }
 
   Future<void> _selectDate() async {
+    final scheme = Theme.of(context).colorScheme;
     final picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -68,16 +69,12 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
       lastDate: DateTime.now(),
       builder: (context, child) {
         return Theme(
-          data: Theme.of(
-            context,
-          ).copyWith(colorScheme: const ColorScheme.light(primary: kNavyBlue)),
+          data: Theme.of(context).copyWith(colorScheme: scheme),
           child: child!,
         );
       },
     );
-    if (picked != null) {
-      setState(() => _incurredDate = picked);
-    }
+    if (picked != null) setState(() => _incurredDate = picked);
   }
 
   void _simulateFileUpload() {
@@ -94,21 +91,26 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
 
   void _submit() {
     if (_formKey.currentState!.validate()) {
+      final scheme = Theme.of(context).colorScheme;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Reimbursement submitted successfully'),
-          backgroundColor: kNavyBlue,
+        SnackBar(
+          content: const Text('Reimbursement submitted successfully'),
+          backgroundColor: scheme.primary,
         ),
       );
     }
+    showHmoFeedbackModal(context);
   }
 
   final ScrollController _scrollController = ScrollController();
+
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       drawer: CustomDrawer(),
-      backgroundColor: Colors.white,
+      backgroundColor: scheme.surface,
       body: SafeArea(
         child: Stack(
           children: [
@@ -127,12 +129,10 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // _buildFormTitle(),
                             const SizedBox(height: 24),
-
-                            // Claim Type
-                            _buildLabel('Claim Type'),
+                            _buildLabel('Claim Type', scheme),
                             _buildDropdown(
+                              scheme: scheme,
                               hint: 'Claim Type',
                               value: _selectedClaimType,
                               items: _claimTypes,
@@ -142,15 +142,12 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
                                   v == null ? 'Select claim type' : null,
                             ),
                             const SizedBox(height: 20),
-
-                            // Claimed Incurred Date
-                            _buildLabel('Claimed Incurred Date'),
-                            _buildDateField(),
+                            _buildLabel('Claimed Incurred Date', scheme),
+                            _buildDateField(scheme),
                             const SizedBox(height: 20),
-
-                            // Select State
-                            _buildLabel('Select State'),
+                            _buildLabel('Select State', scheme),
                             _buildDropdown(
+                              scheme: scheme,
                               hint: 'Select',
                               value: _selectedState,
                               items: _states,
@@ -162,15 +159,12 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
                                   v == null ? 'Select a state' : null,
                             ),
                             const SizedBox(height: 20),
-
-                            // Select City
-                            _buildLabel('Select City'),
-                            _buildCityDropdown(),
+                            _buildLabel('Select City', scheme),
+                            _buildCityDropdown(scheme),
                             const SizedBox(height: 20),
-
-                            // Provider Name
-                            _buildLabel('Provider Name'),
+                            _buildLabel('Provider Name', scheme),
                             _buildTextField(
+                              scheme: scheme,
                               controller: _providerNameController,
                               hint: 'Enter provider name',
                               validator: (v) => (v == null || v.isEmpty)
@@ -178,10 +172,9 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
                                   : null,
                             ),
                             const SizedBox(height: 20),
-
-                            // Claimed Amount
-                            _buildLabel('Claimed Amount'),
+                            _buildLabel('Claimed Amount', scheme),
                             _buildTextField(
+                              scheme: scheme,
                               controller: _claimAmountController,
                               hint: 'Enter Claim Amount',
                               keyboardType: TextInputType.number,
@@ -190,10 +183,9 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
                                   : null,
                             ),
                             const SizedBox(height: 20),
-
-                            // Reimbursement Code
-                            _buildLabel('Reimbursement Code'),
+                            _buildLabel('Reimbursement Code', scheme),
                             _buildTextField(
+                              scheme: scheme,
                               controller: _reimbursementCodeController,
                               hint: 'Enter Your Reimbursement Code',
                               validator: (v) => (v == null || v.isEmpty)
@@ -201,36 +193,33 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
                                   : null,
                             ),
                             const SizedBox(height: 20),
-
-                            // Comment
-                            _buildLabel('Comment'),
+                            _buildLabel('Comment', scheme),
                             _buildTextField(
+                              scheme: scheme,
                               controller: _commentController,
                               hint: 'Enter comment',
                               maxLines: 5,
                             ),
                             const SizedBox(height: 20),
-
-                            // Upload Prescription
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                _buildLabel('Upload Prescription'),
+                                _buildLabel('Upload Prescription', scheme),
                                 Text(
                                   '$_uploadedFiles/$_maxFiles',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14,
-                                    color: Colors.grey,
+                                    color: scheme.onSurface.withValues(
+                                      alpha: 0.5,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 8),
-                            _buildUploadArea(),
+                            _buildUploadArea(scheme),
                             const SizedBox(height: 32),
-
-                            // Submit Button
-                            _buildSubmitButton(),
+                            _buildSubmitButton(scheme),
                             const SizedBox(height: 16),
                           ],
                         ),
@@ -240,7 +229,6 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
                 ],
               ),
             ),
-
             FloatingAppBar(
               scrollController: _scrollController,
               username: 'User',
@@ -251,21 +239,22 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     );
   }
 
-  Widget _buildLabel(String text) {
+  Widget _buildLabel(String text, ColorScheme scheme) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w600,
-          color: Colors.black87,
+          color: scheme.onSurface,
         ),
       ),
     );
   }
 
   Widget _buildTextField({
+    required ColorScheme scheme,
     required TextEditingController controller,
     required String hint,
     TextInputType keyboardType = TextInputType.text,
@@ -277,11 +266,15 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
       keyboardType: keyboardType,
       maxLines: maxLines,
       validator: validator,
+      style: TextStyle(color: scheme.onSurface, fontSize: 14),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+        hintStyle: TextStyle(
+          color: scheme.onSurface.withValues(alpha: 0.4),
+          fontSize: 14,
+        ),
         filled: true,
-        fillColor: kDarkTextOnPrimary,
+        fillColor: scheme.surfaceContainer,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 14,
@@ -296,17 +289,18 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: kNavyBlue, width: 1.5),
+          borderSide: BorderSide(color: scheme.primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.red, width: 1),
+          borderSide: BorderSide(color: scheme.error, width: 1),
         ),
       ),
     );
   }
 
   Widget _buildDropdown({
+    required ColorScheme scheme,
     required String hint,
     required String? value,
     required List<String> items,
@@ -316,9 +310,11 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     return DropdownButtonFormField<String>(
       initialValue: value,
       validator: validator,
+      dropdownColor: scheme.surfaceContainer,
+      style: TextStyle(color: scheme.onSurface, fontSize: 14),
       decoration: InputDecoration(
         filled: true,
-
+        fillColor: scheme.surfaceContainer,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 14,
@@ -333,14 +329,20 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: kNavyBlue, width: 1.5),
+          borderSide: BorderSide(color: scheme.primary, width: 1.5),
         ),
       ),
       hint: Text(
         hint,
-        style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+        style: TextStyle(
+          color: scheme.onSurface.withValues(alpha: 0.4),
+          fontSize: 14,
+        ),
       ),
-      icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+      icon: Icon(
+        Icons.keyboard_arrow_down,
+        color: scheme.onSurface.withValues(alpha: 0.5),
+      ),
       items: items
           .map((item) => DropdownMenuItem(value: item, child: Text(item)))
           .toList(),
@@ -348,16 +350,22 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     );
   }
 
-  Widget _buildCityDropdown() {
+  Widget _buildCityDropdown(ColorScheme scheme) {
+    final isDisabled = _selectedState == null;
     return DropdownButtonFormField<String>(
       initialValue: _selectedCity,
       validator: (v) => v == null ? 'Select a city' : null,
+      dropdownColor: scheme.surfaceContainer,
+      style: TextStyle(color: scheme.onSurface, fontSize: 14),
       decoration: InputDecoration(
         filled: true,
-        fillColor: _selectedState == null
-            ? Colors.grey.shade200
-            : kDarkTextOnPrimary,
-        prefixIcon: const Icon(Icons.location_on_outlined, color: Colors.grey),
+        fillColor: isDisabled
+            ? scheme.onSurface.withValues(alpha: 0.06)
+            : scheme.surfaceContainer,
+        prefixIcon: Icon(
+          Icons.location_on_outlined,
+          color: scheme.onSurface.withValues(alpha: 0.4),
+        ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 14,
@@ -372,34 +380,36 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: kNavyBlue, width: 1.5),
+          borderSide: BorderSide(color: scheme.primary, width: 1.5),
         ),
       ),
       hint: Text(
         'Select a city',
-        style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+        style: TextStyle(
+          color: scheme.onSurface.withValues(alpha: 0.4),
+          fontSize: 14,
+        ),
       ),
-      icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
-      items: _selectedState == null
+      icon: Icon(
+        Icons.keyboard_arrow_down,
+        color: scheme.onSurface.withValues(alpha: 0.5),
+      ),
+      items: isDisabled
           ? []
           : _cities
                 .map((city) => DropdownMenuItem(value: city, child: Text(city)))
                 .toList(),
-      onChanged: _selectedState == null
-          ? null
-          : (v) => setState(() => _selectedCity = v),
+      onChanged: isDisabled ? null : (v) => setState(() => _selectedCity = v),
     );
   }
 
-  Widget _buildDateField() {
+  Widget _buildDateField(ColorScheme scheme) {
     return GestureDetector(
       onTap: _selectDate,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: _selectedState == null
-              ? Colors.grey.shade200
-              : kDarkTextOnPrimary,
+          color: scheme.surfaceContainer,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
@@ -413,14 +423,14 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
                         '${_incurredDate!.year}',
               style: TextStyle(
                 color: _incurredDate == null
-                    ? Colors.grey.shade400
-                    : Colors.black87,
+                    ? scheme.onSurface.withValues(alpha: 0.4)
+                    : scheme.onSurface,
                 fontSize: 14,
               ),
             ),
-            const Icon(
+            Icon(
               Icons.calendar_today_outlined,
-              color: Colors.grey,
+              color: scheme.onSurface.withValues(alpha: 0.4),
               size: 20,
             ),
           ],
@@ -429,31 +439,35 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     );
   }
 
-  Widget _buildUploadArea() {
+  Widget _buildUploadArea(ColorScheme scheme) {
+    final isMaxed = _uploadedFiles >= _maxFiles;
     return GestureDetector(
-      onTap: _uploadedFiles < _maxFiles ? _simulateFileUpload : null,
+      onTap: isMaxed ? null : _simulateFileUpload,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
         decoration: BoxDecoration(
-          color: _uploadedFiles >= _maxFiles
-              ? Colors.grey.shade200
-              : kDarkTextOnPrimary,
+          color: isMaxed
+              ? scheme.onSurface.withValues(alpha: 0.06)
+              : scheme.surfaceContainer,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: _uploadedFiles >= _maxFiles
-                ? Colors.grey.shade300
+            color: isMaxed
+                ? scheme.onSurface.withValues(alpha: 0.12)
                 : Colors.transparent,
           ),
         ),
         child: Row(
           children: [
-            Icon(Icons.upload_file, color: kNavyBlue, size: 28),
+            Icon(Icons.upload_file, color: scheme.primary, size: 28),
             const SizedBox(width: 12),
             Text(
               _uploadedFiles > 0
                   ? '$_uploadedFiles file${_uploadedFiles > 1 ? 's' : ''} selected'
                   : 'Upload Files',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 15),
+              style: TextStyle(
+                color: scheme.onSurface.withValues(alpha: 0.5),
+                fontSize: 15,
+              ),
             ),
           ],
         ),
@@ -461,15 +475,15 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     );
   }
 
-  Widget _buildSubmitButton() {
+  Widget _buildSubmitButton(ColorScheme scheme) {
     return SizedBox(
       width: double.infinity,
       height: 54,
       child: ElevatedButton(
         onPressed: _submit,
         style: ElevatedButton.styleFrom(
-          backgroundColor: kNavyBlue,
-          foregroundColor: Colors.white,
+          backgroundColor: scheme.primary,
+          foregroundColor: scheme.onPrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(30),
           ),

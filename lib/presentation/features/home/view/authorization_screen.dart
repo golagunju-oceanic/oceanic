@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:oceanic/presentation/widgets/drawer.dart';
 
@@ -13,37 +12,41 @@ class AuthorizationScreen extends ConsumerStatefulWidget {
 
 class _AuthorizationScreenState extends ConsumerState<AuthorizationScreen> {
   final ScrollController _scrollController = ScrollController();
+
   final List<Map<String, dynamic>> authorizations = [
     {
-      "id": "AUTH001",
-      "service": "MRI Scan",
-      "hospital": "St. Mary's Hospital",
-      "status": "PENDING",
-      "date": "2026-04-12",
+      'id': 'AUTH001',
+      'service': 'MRI Scan',
+      'hospital': "St. Mary's Hospital",
+      'status': 'PENDING',
+      'date': '2026-04-12',
     },
     {
-      "id": "AUTH002",
-      "service": "Surgery",
-      "hospital": "City Clinic",
-      "status": "APPROVED",
-      "date": "2026-04-05",
+      'id': 'AUTH002',
+      'service': 'Surgery',
+      'hospital': 'City Clinic',
+      'status': 'APPROVED',
+      'date': '2026-04-05',
     },
     {
-      "id": "AUTH003",
-      "service": "Blood Test",
-      "hospital": "HealthLab",
-      "status": "REJECTED",
-      "date": "2026-04-02",
+      'id': 'AUTH003',
+      'service': 'Blood Test',
+      'hospital': 'HealthLab',
+      'status': 'REJECTED',
+      'date': '2026-04-02',
     },
   ];
+
+  DateTimeRange? _selectedDateRange;
+
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
   }
 
-  DateTimeRange? _selectedDateRange;
   void _pickDateRange() async {
+    final scheme = Theme.of(context).colorScheme;
     final DateTimeRange? picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
@@ -51,149 +54,171 @@ class _AuthorizationScreenState extends ConsumerState<AuthorizationScreen> {
       initialDateRange: _selectedDateRange,
       builder: (context, child) {
         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF3F3A8A),
-              onPrimary: Colors.white,
-              onSurface: Colors.black,
-            ),
-          ),
+          data: Theme.of(context).copyWith(colorScheme: scheme),
           child: child!,
         );
       },
     );
-
-    if (picked != null) {
-      setState(() => _selectedDateRange = picked);
-    }
+    if (picked != null) setState(() => _selectedDateRange = picked);
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
+  String _formatDate(DateTime date) => '${date.day}/${date.month}/${date.year}';
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       endDrawer: CustomDrawer(),
-      appBar: AppBar(
-        // height: 10,
-        title: const Text('Authorization'),
-      ),
-      body: Stack(
+      appBar: AppBar(title: const Text('Authorization')),
+      body: Column(
         children: [
-          Column(
-            children: [
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: _pickDateRange,
-                    child: Container(
-                      margin: EdgeInsets.only(left: 20.w),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 12.w,
-                        vertical: 8.h,
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: _pickDateRange,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 8.h,
+                    ),
+                    width: 180.w,
+                    decoration: BoxDecoration(
+                      color: scheme.surfaceContainer,
+                      borderRadius: BorderRadius.circular(6.r),
+                      border: Border.all(
+                        color: scheme.onSurface.withValues(alpha: 0.2),
                       ),
-                      width: 180.w,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(6.r),
-                        border: Border.all(color: Colors.grey[400]!),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.calendar_today, size: 18.r),
-                          SizedBox(width: 8.w),
-                          Expanded(
-                            child: Text(
-                              _selectedDateRange == null
-                                  ? 'Select dates'
-                                  : '${_formatDate(_selectedDateRange!.start)} - ${_formatDate(_selectedDateRange!.end)}',
-                              style: TextStyle(fontSize: 11.sp),
-                              overflow: TextOverflow.ellipsis,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          size: 18.r,
+                          color: scheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                        SizedBox(width: 8.w),
+                        Expanded(
+                          child: Text(
+                            _selectedDateRange == null
+                                ? 'Select dates'
+                                : '${_formatDate(_selectedDateRange!.start)} - ${_formatDate(_selectedDateRange!.end)}',
+                            style: TextStyle(
+                              fontSize: 11.sp,
+                              color: scheme.onSurface,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                  SizedBox(width: 16.w),
-                  ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF3F3A8A),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 20.w,
-                        vertical: 5.h,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10.r),
-                      ),
-                    ),
-                    child: Text(
-                      "Search",
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              Expanded(
-                child: ListView.builder(
-                  itemBuilder: (context, index) => _card(authorizations, index),
-                  itemCount: authorizations.length,
                 ),
-              ),
-            ],
+                SizedBox(width: 16.w),
+                ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: scheme.primary,
+                    foregroundColor: scheme.onPrimary,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 20.w,
+                      vertical: 5.h,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                  ),
+                  child: Text(
+                    'Search',
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              itemCount: authorizations.length,
+              itemBuilder: (context, index) =>
+                  _buildCard(authorizations[index], scheme),
+            ),
           ),
         ],
       ),
     );
   }
-}
 
-Widget? _card(List<Map<String, dynamic>> authorizations, int index) {
-  final auth = authorizations[index];
-  return Card(
-    margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-    elevation: 3,
-    child: Padding(
-      padding: EdgeInsets.all(16.w),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            auth['service'],
-            style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 8.h),
-          Text('Hospital: ${auth['hospital']}'),
-          SizedBox(height: 8.h),
-          Row(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: auth['status'] == 'APPROVED'
-                      ? Colors.green
-                      : auth['status'] == 'REJECTED'
-                      ? Colors.red
-                      : Colors.yellow,
-                  borderRadius: BorderRadius.circular(5.r),
-                ),
-                child: SizedBox(width: 10.w, height: 10.h),
+  Widget _buildCard(Map<String, dynamic> auth, ColorScheme scheme) {
+    Color statusColor;
+    switch (auth['status']) {
+      case 'APPROVED':
+        statusColor = const Color(0xFF28A745);
+        break;
+      case 'REJECTED':
+        statusColor = scheme.error;
+        break;
+      default:
+        statusColor = const Color(0xFFF5A623);
+    }
+
+    return Card(
+      margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+      color: scheme.surfaceContainer,
+      elevation: 0,
+      child: Padding(
+        padding: EdgeInsets.all(16.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              auth['service'],
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.bold,
+                color: scheme.onSurface,
               ),
-              SizedBox(width: 10.w),
-              Text('Status: ${auth['status']}'),
-            ],
-          ),
-          SizedBox(height: 8.h),
-          Text('Date: ${auth['date']}'),
-        ],
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              'Hospital: ${auth['hospital']}',
+              style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.7)),
+            ),
+            SizedBox(height: 8.h),
+            Row(
+              children: [
+                Container(
+                  width: 10.w,
+                  height: 10.h,
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    borderRadius: BorderRadius.circular(5.r),
+                  ),
+                ),
+                SizedBox(width: 10.w),
+                Text(
+                  'Status: ${auth['status']}',
+                  style: TextStyle(
+                    color: statusColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              'Date: ${auth['date']}',
+              style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.7)),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

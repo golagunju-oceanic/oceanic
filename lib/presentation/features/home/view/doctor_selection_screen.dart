@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:oceanic/core/constants/app_colors.dart';
 import 'package:oceanic/presentation/features/home/view/date_selction_screen.dart';
 import 'package:oceanic/presentation/widgets/octodoc_scaffold.dart';
 
@@ -32,6 +31,8 @@ class DoctorSelectionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return OctodocScaffold(
       currentStep: 1,
       child: Padding(
@@ -39,12 +40,13 @@ class DoctorSelectionScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Select a Doctor',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
                 fontStyle: FontStyle.italic,
+                color: scheme.onSurface,
               ),
             ),
             const SizedBox(height: 16),
@@ -53,7 +55,9 @@ class DoctorSelectionScreen extends StatelessWidget {
                 doctor: doc,
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const DateSelectionScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const DateSelectionScreen(),
+                  ),
                 ),
               ),
             ),
@@ -71,17 +75,19 @@ class _DoctorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: scheme.surfaceContainer,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.07),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -97,9 +103,13 @@ class _DoctorCard extends StatelessWidget {
                   height: 56,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    color: Colors.grey.shade300,
+                    color: scheme.onSurface.withValues(alpha: 0.1),
                   ),
-                  child: const Icon(Icons.person, size: 36, color: Colors.grey),
+                  child: Icon(
+                    Icons.person,
+                    size: 36,
+                    color: scheme.onSurface.withValues(alpha: 0.35),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -108,14 +118,18 @@ class _DoctorCard extends StatelessWidget {
                     children: [
                       Text(
                         doctor['name'],
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
+                          color: scheme.onSurface,
                         ),
                       ),
                       Text(
                         doctor['role'],
-                        style: const TextStyle(color: kTextGray, fontSize: 13),
+                        style: TextStyle(
+                          color: scheme.onSurface.withValues(alpha: 0.5),
+                          fontSize: 13,
+                        ),
                       ),
                       Row(
                         children: [
@@ -123,24 +137,34 @@ class _DoctorCard extends StatelessWidget {
                           const SizedBox(width: 2),
                           Text(
                             '${doctor['rating']}',
-                            style: const TextStyle(fontSize: 13),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: scheme.onSurface,
+                            ),
                           ),
                         ],
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.favorite, color: kTeal, size: 22),
+                Icon(Icons.favorite, color: scheme.secondary, size: 22),
               ],
             ),
             const SizedBox(height: 8),
             Text(
               doctor['clinic'],
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: scheme.onSurface,
+              ),
             ),
             Text(
               doctor['address'],
-              style: const TextStyle(color: kTextGray, fontSize: 12),
+              style: TextStyle(
+                color: scheme.onSurface.withValues(alpha: 0.5),
+                fontSize: 12,
+              ),
             ),
           ],
         ),

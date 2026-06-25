@@ -11,9 +11,6 @@ class DeleteProfilePage extends StatefulWidget {
 }
 
 class _DeleteProfilePageState extends State<DeleteProfilePage> {
-  static const _navy = Color(0xFF2D2D8E);
-  static const _danger = Color(0xFFE05252);
-
   final List<String> _reasons = [
     'I am no longer an enrollee',
     'The Application is not user-friendly',
@@ -24,8 +21,10 @@ class _DeleteProfilePageState extends State<DeleteProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
+      backgroundColor: scheme.surface,
       body: Column(
         children: [
           _Header(),
@@ -33,12 +32,12 @@ class _DeleteProfilePageState extends State<DeleteProfilePage> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 32, 20, 24),
               children: [
-                const Text(
+                Text(
                   "We're sorry to see you go!",
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
-                    color: Colors.black87,
+                    color: scheme.onSurface,
                     height: 1.3,
                   ),
                 ),
@@ -48,7 +47,7 @@ class _DeleteProfilePageState extends State<DeleteProfilePage> {
                   "We're sorry to see you leave, but we respect your decision.",
                   style: TextStyle(
                     fontSize: 14.5,
-                    color: Colors.grey[700],
+                    color: scheme.onSurface.withValues(alpha: 0.6),
                     height: 1.6,
                   ),
                 ),
@@ -58,23 +57,22 @@ class _DeleteProfilePageState extends State<DeleteProfilePage> {
                   "done better, we'd love to hear from you. Your insights are valuable to us!",
                   style: TextStyle(
                     fontSize: 14.5,
-                    color: Colors.grey[700],
+                    color: scheme.onSurface.withValues(alpha: 0.6),
                     height: 1.6,
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Text(
+                Text(
                   "Remember, you're always welcome back!",
                   style: TextStyle(
                     fontSize: 14.5,
                     fontWeight: FontWeight.w700,
-                    color: Colors.black87,
+                    color: scheme.onSurface,
                     height: 1.5,
                   ),
                 ),
                 const SizedBox(height: 28),
 
-                // Reason checkboxes
                 ...List.generate(_reasons.length, (i) {
                   final checked = _selected.contains(i);
                   return Padding(
@@ -91,11 +89,13 @@ class _DeleteProfilePageState extends State<DeleteProfilePage> {
                         ),
                         decoration: BoxDecoration(
                           color: checked
-                              ? _navy.withValues(alpha: 0.06)
-                              : Colors.white,
+                              ? scheme.primary.withValues(alpha: 0.07)
+                              : scheme.surfaceContainer,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: checked ? _navy : Colors.grey.shade200,
+                            color: checked
+                                ? scheme.primary
+                                : scheme.onSurface.withValues(alpha: 0.12),
                             width: checked ? 1.5 : 1,
                           ),
                           boxShadow: [
@@ -113,17 +113,23 @@ class _DeleteProfilePageState extends State<DeleteProfilePage> {
                               width: 22,
                               height: 22,
                               decoration: BoxDecoration(
-                                color: checked ? _navy : Colors.transparent,
+                                color: checked
+                                    ? scheme.primary
+                                    : Colors.transparent,
                                 borderRadius: BorderRadius.circular(6),
                                 border: Border.all(
-                                  color: checked ? _navy : Colors.grey.shade400,
+                                  color: checked
+                                      ? scheme.primary
+                                      : scheme.onSurface.withValues(
+                                          alpha: 0.35,
+                                        ),
                                   width: 1.5,
                                 ),
                               ),
                               child: checked
-                                  ? const Icon(
+                                  ? Icon(
                                       Icons.check,
-                                      color: Colors.white,
+                                      color: scheme.onPrimary,
                                       size: 14,
                                     )
                                   : null,
@@ -137,7 +143,9 @@ class _DeleteProfilePageState extends State<DeleteProfilePage> {
                                   fontWeight: checked
                                       ? FontWeight.w600
                                       : FontWeight.w400,
-                                  color: checked ? _navy : Colors.black87,
+                                  color: checked
+                                      ? scheme.primary
+                                      : scheme.onSurface,
                                 ),
                               ),
                             ),
@@ -150,7 +158,6 @@ class _DeleteProfilePageState extends State<DeleteProfilePage> {
 
                 const SizedBox(height: 32),
 
-                // Delete button
                 SizedBox(
                   width: double.infinity,
                   height: 54,
@@ -159,21 +166,24 @@ class _DeleteProfilePageState extends State<DeleteProfilePage> {
                         ? null
                         : () => _confirmDelete(context),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _danger,
-                      disabledBackgroundColor: Colors.grey.shade300,
+                      backgroundColor: scheme.error,
+                      foregroundColor: scheme.onError,
+                      disabledBackgroundColor: scheme.onSurface.withValues(
+                        alpha: 0.12,
+                      ),
+                      disabledForegroundColor: scheme.onSurface.withValues(
+                        alpha: 0.38,
+                      ),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(28),
                       ),
                     ),
-                    child: Text(
+                    child: const Text(
                       'Delete',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: _selected.isEmpty
-                            ? Colors.grey.shade500
-                            : Colors.white,
                         letterSpacing: 0.3,
                       ),
                     ),
@@ -181,7 +191,6 @@ class _DeleteProfilePageState extends State<DeleteProfilePage> {
                 ),
                 const SizedBox(height: 16),
 
-                // Cancel
                 Center(
                   child: TextButton(
                     onPressed: () => Navigator.maybePop(context),
@@ -189,7 +198,7 @@ class _DeleteProfilePageState extends State<DeleteProfilePage> {
                       'Keep my account',
                       style: TextStyle(
                         fontSize: 14,
-                        color: _navy,
+                        color: scheme.primary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -204,22 +213,33 @@ class _DeleteProfilePageState extends State<DeleteProfilePage> {
   }
 
   void _confirmDelete(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (dialogueContext) => AlertDialog(
+        backgroundColor: scheme.surfaceContainer,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
+        title: Text(
           'Delete Account',
-          style: TextStyle(fontWeight: FontWeight.w700),
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: scheme.onSurface,
+          ),
         ),
-        content: const Text(
+        content: Text(
           'This is permanent and cannot be undone. Your data will be removed.',
-          style: TextStyle(height: 1.5),
+          style: TextStyle(
+            height: 1.5,
+            color: scheme.onSurface.withValues(alpha: 0.7),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogueContext),
-            child: const Text('Cancel'),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.6)),
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -228,10 +248,10 @@ class _DeleteProfilePageState extends State<DeleteProfilePage> {
                 MaterialPageRoute(builder: (context) => const AuthScreen()),
               );
             },
-            child: const Text(
+            child: Text(
               'Delete',
               style: TextStyle(
-                color: Color(0xFFE05252),
+                color: scheme.error,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -242,17 +262,15 @@ class _DeleteProfilePageState extends State<DeleteProfilePage> {
   }
 }
 
-// ── Header ────────────────────────────────────────────────────────────────────
-
 class _Header extends StatelessWidget {
-  static const _navy = Color(0xFF2D2D8E);
-
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Container(
-      decoration: const BoxDecoration(
-        color: _navy,
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        color: scheme.primary,
+        borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(28),
           bottomRight: Radius.circular(28),
         ),
@@ -269,12 +287,12 @@ class _Header extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
+                    color: scheme.onPrimary.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     CupertinoIcons.chevron_left,
-                    color: Colors.white,
+                    color: scheme.onPrimary,
                     size: 18,
                   ),
                 ),

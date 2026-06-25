@@ -1,28 +1,21 @@
-class UserModel {
-  final String id;
-  final String username;
-  final String memberId;
-  final String? password; // Optional
-  final String? confirmPassword; // Optional
-  final String token;
+import '../../domain/entities/auth_user.dart';
 
-  const UserModel({
-    required this.id,
-    required this.memberId,
-    this.password,
-    this.confirmPassword,
-    required this.token,
-    required this.username,
+class AuthUserModel extends AuthUser {
+  AuthUserModel({
+    required super.memberId,
+    required super.firstName,
+    required super.lastName,
+    required super.email,
+    required super.phoneNumber,
   });
 
-  factory UserModel.fromMap(Map<String, dynamic> map) {
-    return UserModel(
-      id: map['id']?.toString() ?? '',
-      memberId: map['memberId']?.toString() ?? '',
-      username: map['username']?.toString() ?? '',
-      token: map['token']?.toString() ?? '',
-      password: map['password']?.toString(), // Can be null
-      confirmPassword: map['confirmPassword']?.toString(), // Can be null
+  factory AuthUserModel.fromJson(Map<String, dynamic> json) {
+    return AuthUserModel(
+      memberId: json['memberId'],
+      firstName: json['firstName'],
+      lastName: json['lastName'],
+      email: json['email'],
+      phoneNumber: json['phoneNumber'],
     );
   }
 }

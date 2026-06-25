@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:oceanic/core/constants/app_colors.dart';
-
+import 'package:oceanic/data/models/states.dart';
 import 'package:oceanic/presentation/widgets/drawer.dart';
 
 class MedicalRequest extends ConsumerStatefulWidget {
@@ -15,49 +14,22 @@ class MedicalRequest extends ConsumerStatefulWidget {
 class _MedicalRequestState extends ConsumerState<MedicalRequest> {
   bool _isSelected = true;
   String? selectedState;
-  // String? selectedState2;
   String? selectedCity;
+  final _states = States();
+  List<String> get nigerianStates =>
+      _states.states.map((s) => s['name'] as String).toList();
+
+  List<String> citiesFor(String? state) {
+    if (state == null) return [];
+    return List<String>.from(
+      _states.states.firstWhere((s) => s['name'] == state)['cities'],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    const List<String> nigerianStates = [
-      'Abia',
-      'Adamawa',
-      'Akwa Ibom',
-      'Anambra',
-      'Bauchi',
-      'Bayelsa',
-      'Benue',
-      'Borno',
-      'Cross River',
-      'Delta',
-      'Ebonyi',
-      'Edo',
-      'Ekiti',
-      'Enugu',
-      'FCT Abuja',
-      'Gombe',
-      'Imo',
-      'Jigawa',
-      'Kaduna',
-      'Kano',
-      'Katsina',
-      'Kebbi',
-      'Kogi',
-      'Kwara',
-      'Lagos',
-      'Nasarawa',
-      'Niger',
-      'Ogun',
-      'Ondo',
-      'Osun',
-      'Oyo',
-      'Plateau',
-      'Rivers',
-      'Sokoto',
-      'Taraba',
-      'Yobe',
-      'Zamfara',
-    ];
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       endDrawer: CustomDrawer(),
       appBar: AppBar(title: const Text('Medical Request')),
@@ -75,15 +47,17 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
                         color: !_isSelected
-                            ? const Color(0xFF2D2D8E)
-                            : const Color(0xFFEAEAEA),
+                            ? scheme.primary
+                            : scheme.onSurface.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       alignment: Alignment.center,
                       child: Text(
                         'New Prescription',
                         style: TextStyle(
-                          color: !_isSelected ? Colors.white : Colors.black54,
+                          color: !_isSelected
+                              ? scheme.onPrimary
+                              : scheme.onSurface.withValues(alpha: 0.5),
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
                         ),
@@ -100,15 +74,17 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
                         color: _isSelected
-                            ? const Color(0xFF2D2D8E)
-                            : const Color(0xFFEAEAEA),
+                            ? scheme.primary
+                            : scheme.onSurface.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       alignment: Alignment.center,
                       child: Text(
                         'Request Refill',
                         style: TextStyle(
-                          color: _isSelected ? Colors.white : Colors.black54,
+                          color: _isSelected
+                              ? scheme.onPrimary
+                              : scheme.onSurface.withValues(alpha: 0.5),
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
                         ),
@@ -119,574 +95,625 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
               ],
             ),
           ),
-
-          // Content
           Expanded(
             child: _isSelected
-                ? _requestRefill()
-                : _newPrescribtion(
-                    context,
-                    nigerianStates,
-                    selectedState,
-                    (value) => setState(() => selectedState = value),
-                    selectedCity,
-                    (value) => setState(() => selectedCity = value),
-                  ),
+                ? _requestRefill(scheme)
+                : _newPrescription(scheme),
           ),
         ],
       ),
     );
   }
-}
 
-Widget _newPrescribtion(
-  BuildContext context,
-  List<String> states,
-  String? selectedState,
-
-  Function(String) onStateSelected,
-  String? selectedCity,
-  Function(String) onCitySelected,
-) {
-  return Padding(
-    padding: EdgeInsets.all(10),
-    child: SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GestureDetector(
-            onTap: () {
-              showModalBottomSheet(
-                sheetAnimationStyle: const AnimationStyle(
-                  duration: Duration(milliseconds: 500),
-                  curve: Curves.easeInOut,
-                ),
-                context: context,
-                builder: (context) => SizedBox(
-                  height: 300.h,
-                  width: double.infinity,
-                  child: Center(
-                    child: Container(
-                      margin: EdgeInsets.all(20),
-                      child: Column(
-                        children: [
-                          _uploadOption(Icons.camera_alt, "Take a photo"),
-                          _uploadOption(
-                            Icons.photo_library,
-                            "Select from gallery",
-                          ),
-                          _uploadOption(Icons.folder, "Select from files"),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-            child: Container(
-              margin: EdgeInsets.all(5),
-              width: double.infinity,
-              height: 50,
-              padding: EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                color: kNavyBlue.withValues(alpha: 0.2),
-                border: Border.all(width: 1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                children: [Icon(Icons.upload_file), Text("Upload Files ")],
-              ),
-            ),
-          ),
-          Text("Select state", style: TextStyle(color: Colors.grey)),
-          GestureDetector(
-            onTap: () => showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              builder: (context) {
-                List<String> filteredStates = List.from(states);
-
-                return StatefulBuilder(
-                  builder: (context, setState) {
-                    return Container(
-                      padding: EdgeInsets.all(20),
-                      height: 600,
-                      child: Column(
-                        children: [
-                          SearchBar(
-                            hintText: 'Search state',
-                            leading: Icon(Icons.search),
-                            onChanged: (value) {
-                              setState(() {
-                                filteredStates = states
-                                    .where(
-                                      (state) => state.toLowerCase().contains(
-                                        value.toLowerCase(),
-                                      ),
-                                    )
-                                    .toList();
-                              });
-                            },
-                          ),
-                          SizedBox(height: 10),
-                          Expanded(
-                            child: ListView.builder(
-                              itemCount: filteredStates.length,
-                              itemBuilder: (context, index) => ListTile(
-                                title: Text(filteredStates[index]),
-                                onTap: () {
-                                  onStateSelected(filteredStates[index]);
-                                  Navigator.pop(context);
-                                },
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-            child: Container(
-              margin: EdgeInsets.all(5),
-              width: double.infinity,
-              height: 50,
-              padding: EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                color: kNavyBlue.withValues(alpha: 0.2),
-                border: Border.all(width: 1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                children: [
-                  Text(selectedState ?? "Select state"),
-                  Spacer(),
-                  Icon(Icons.arrow_drop_down),
-                ],
-              ),
-            ),
-          ),
-          Text("Select city", style: TextStyle(color: Colors.grey)),
-          // SizedBox(height: 1.h),
-          GestureDetector(
-            onTap: () => showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              builder: (context) {
-                List<String> filteredStates = List.from(states);
-
-                return StatefulBuilder(
-                  builder: (context, setState) {
-                    return Container(
-                      padding: EdgeInsets.symmetric(vertical: 20),
-                      height: 600,
-                      child: Column(
-                        children: [
-                          SearchBar(
-                            hintText: 'Search City',
-                            leading: Icon(Icons.search),
-                            onChanged: (value) {
-                              setState(() {
-                                filteredStates = states
-                                    .where(
-                                      (state) => state.toLowerCase().contains(
-                                        value.toLowerCase(),
-                                      ),
-                                    )
-                                    .toList();
-                              });
-                            },
-                          ),
-                          SizedBox(height: 10),
-                          Expanded(
-                            child: ListView.builder(
-                              itemCount: filteredStates.length,
-                              itemBuilder: (context, index) => ListTile(
-                                title: Text(filteredStates[index]),
-                                onTap: () {
-                                  onCitySelected(filteredStates[index]);
-                                  Navigator.pop(context);
-                                },
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-            child: Container(
-              margin: EdgeInsets.all(5),
-              width: double.infinity,
-              height: 50,
-              padding: EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                color: kNavyBlue.withValues(alpha: 0.2),
-                border: Border.all(width: 1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                children: [
-                  Text(selectedCity ?? "Select City"),
-                  Spacer(),
-                  Icon(Icons.arrow_drop_down),
-                ],
-              ),
-            ),
-          ),
-          Row(
-            children: [
-              Text('Medication For'),
-              Spacer(),
-              IconButton(
-                onPressed: () {
-                  showModalBottomSheet(
-                    builder: (context) {
-                      return Container(
-                        margin: EdgeInsets.all(20),
-                        width: double.infinity,
-                        padding: EdgeInsets.all(20),
-                        child: Text('Medication For'),
-                      );
-                    },
-                    context: context,
-                  );
-                },
-                icon: Icon(Icons.add),
-              ),
-            ],
-          ),
-          Text(
-            'Kindly select a condition or illness you want to be treated for.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey[500]),
-          ),
-          Text('Other comment', style: TextStyle(color: Colors.grey[700])),
-          TextField(
-            maxLines: 4,
-            decoration: InputDecoration(
-              hintText: 'Type here',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          ),
-          SizedBox(height: 20),
-          Center(
-            child: ElevatedButton(
-              onPressed: () {},
-              child: Text('Submit Request'),
-            ),
-          ),
-          SizedBox(height: 20),
-          RichText(
-            textAlign: TextAlign.center,
-            text: TextSpan(
-              text:
-                  "If you're having difficulty reqquesting for medication, Kindly contact ",
-              style: TextStyle(color: Colors.grey[800]),
-              children: [
-                TextSpan(
-                  text: '02013300300',
-                  style: TextStyle(
-                    color: kNavyBlue,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-                TextSpan(text: ' or send us a mail at '),
-                TextSpan(
-                  text: 'pbm@oceanichealthng.com',
-                  style: TextStyle(
-                    color: kNavyBlue,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: 20),
-        ],
-      ),
-    ),
-  );
-}
-
-// Add these to your parent state class:
-// bool _isRefill = true;
-// String? _selectedBeneficiary;
-// String? _selectedState;
-// String? _selectedCity;
-
-Widget _requestRefill() {
-  // bool isRefill = true;
-  String? selectedBeneficiary;
-  String? selectedState;
-  String? selectedCity;
-  return SingleChildScrollView(
-    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-    child: StatefulBuilder(
-      builder: (context, setState) {
-        return Column(
+  Widget _newPrescription(ColorScheme scheme) {
+    return Padding(
+      padding: const EdgeInsets.all(10),
+      child: SingleChildScrollView(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title row
-            // const SizedBox(height: 20),
-
-            // Tab toggle
-
-            // Name
-            const Text(
-              'Name',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF2F2F2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  isExpanded: true,
-                  value: selectedBeneficiary,
-                  hint: const Text(
-                    'Please select a beneficiary',
-                    style: TextStyle(color: Colors.black45, fontSize: 15),
+            GestureDetector(
+              onTap: () {
+                showModalBottomSheet(
+                  sheetAnimationStyle: const AnimationStyle(
+                    duration: Duration(milliseconds: 500),
+                    curve: Curves.easeInOut,
                   ),
-                  icon: const Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: Colors.black45,
-                  ),
-                  items: ['John Doe', 'Jane Doe', 'Bob Smith']
-                      .map(
-                        (e) => DropdownMenuItem(
-                          value: e,
-                          child: Text(e, style: const TextStyle(fontSize: 15)),
+                  context: context,
+                  builder: (context) => SizedBox(
+                    height: 300.h,
+                    width: double.infinity,
+                    child: Center(
+                      child: Container(
+                        margin: const EdgeInsets.all(20),
+                        child: Column(
+                          children: [
+                            _uploadOption(
+                              Icons.camera_alt,
+                              'Take a photo',
+                              scheme,
+                            ),
+                            _uploadOption(
+                              Icons.photo_library,
+                              'Select from gallery',
+                              scheme,
+                            ),
+                            _uploadOption(
+                              Icons.folder,
+                              'Select from files',
+                              scheme,
+                            ),
+                          ],
                         ),
-                      )
-                      .toList(),
-                  onChanged: (v) => setState(() => selectedBeneficiary = v),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // State
-            const Text(
-              'Select State',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF2F2F2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  isExpanded: true,
-                  value: selectedState,
-                  hint: const Text(
-                    'Select',
-                    style: TextStyle(color: Colors.black45, fontSize: 15),
-                  ),
-                  icon: const Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: Colors.black45,
-                  ),
-                  items: ['Lagos', 'Abuja', 'Rivers', 'Kano']
-                      .map(
-                        (e) => DropdownMenuItem(
-                          value: e,
-                          child: Text(e, style: const TextStyle(fontSize: 15)),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (v) => setState(() => selectedState = v),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // City
-            const Text(
-              'Select City',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF2F2F2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.location_on_outlined,
-                    color: Colors.black45,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        isExpanded: true,
-                        value: selectedCity,
-                        hint: const Text(
-                          'Select a city',
-                          style: TextStyle(color: Colors.black45, fontSize: 15),
-                        ),
-                        icon: const Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          color: Colors.black45,
-                        ),
-                        items: ['Ikeja', 'Lekki', 'Victoria Island', 'Yaba']
-                            .map(
-                              (e) => DropdownMenuItem(
-                                value: e,
-                                child: Text(
-                                  e,
-                                  style: const TextStyle(fontSize: 15),
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (v) => setState(() => selectedCity = v),
                       ),
                     ),
                   ),
-                ],
+                );
+              },
+              child: Container(
+                margin: const EdgeInsets.all(5),
+                width: double.infinity,
+                height: 50,
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: scheme.primary.withValues(alpha: 0.1),
+                  border: Border.all(
+                    color: scheme.primary.withValues(alpha: 0.4),
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.upload_file, color: scheme.primary),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Upload Files',
+                      style: TextStyle(color: scheme.onSurface),
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 28),
-
-            // Prescribed medications
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Prescribed Medications',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black87,
+            const SizedBox(height: 8),
+            Text(
+              'Select state',
+              style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.6)),
+            ),
+            GestureDetector(
+              onTap: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                builder: (context) {
+                  List<String> filteredStates = List.from(nigerianStates);
+                  return StatefulBuilder(
+                    builder: (context, setModalState) {
+                      final modalScheme = Theme.of(context).colorScheme;
+                      return Container(
+                        padding: const EdgeInsets.all(20),
+                        height: 600,
+                        color: modalScheme.surface,
+                        child: Column(
+                          children: [
+                            SearchBar(
+                              hintText: 'Search state',
+                              leading: const Icon(Icons.search),
+                              onChanged: (value) {
+                                setModalState(() {
+                                  filteredStates = nigerianStates
+                                      .where(
+                                        (s) => s.toLowerCase().contains(
+                                          value.toLowerCase(),
+                                        ),
+                                      )
+                                      .toList();
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                            Expanded(
+                              child: ListView.builder(
+                                itemCount: filteredStates.length,
+                                itemBuilder: (context, index) => ListTile(
+                                  title: Text(filteredStates[index]),
+                                  onTap: () {
+                                    setState(
+                                      () =>
+                                          selectedState = filteredStates[index],
+                                    );
+                                    Navigator.pop(context);
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+              child: Container(
+                margin: const EdgeInsets.all(5),
+                width: double.infinity,
+                height: 50,
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: scheme.primary.withValues(alpha: 0.1),
+                  border: Border.all(
+                    color: scheme.primary.withValues(alpha: 0.4),
                   ),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                GestureDetector(
-                  onTap: () {},
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF2D2D8E),
-                      shape: BoxShape.circle,
+                child: Row(
+                  children: [
+                    Text(
+                      selectedState ?? 'Select state',
+                      style: TextStyle(
+                        color: selectedState != null
+                            ? scheme.onSurface
+                            : scheme.onSurface.withValues(alpha: 0.4),
+                      ),
                     ),
-                    child: const Icon(Icons.add, color: Colors.white, size: 22),
+                    const Spacer(),
+                    Icon(
+                      Icons.arrow_drop_down,
+                      color: scheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Select city',
+              style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.6)),
+            ),
+            GestureDetector(
+              onTap: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                builder: (context) {
+                  List<String> filteredCities = List.from(
+                    citiesFor(selectedState),
+                  );
+                  return StatefulBuilder(
+                    builder: (context, setModalState) {
+                      final modalScheme = Theme.of(context).colorScheme;
+                      return Container(
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        height: 600,
+                        color: modalScheme.surface,
+                        child: Column(
+                          children: [
+                            SearchBar(
+                              hintText: 'Search City',
+                              leading: const Icon(Icons.search),
+                              onChanged: (value) {
+                                setModalState(() {
+                                  filteredCities =
+                                      citiesFor(
+                                            selectedState,
+                                          ) // not nigerianStates
+                                          .where(
+                                            (c) => c.toLowerCase().contains(
+                                              value.toLowerCase(),
+                                            ),
+                                          )
+                                          .toList();
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                            Expanded(
+                              child: ListView.builder(
+                                itemCount: filteredCities.length,
+                                itemBuilder: (context, index) => ListTile(
+                                  title: Text(filteredCities[index]),
+                                  onTap: () {
+                                    setState(
+                                      () =>
+                                          selectedCity = filteredCities[index],
+                                    );
+                                    Navigator.pop(context);
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+              child: Container(
+                margin: const EdgeInsets.all(5),
+                width: double.infinity,
+                height: 50,
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: scheme.primary.withValues(alpha: 0.1),
+                  border: Border.all(
+                    color: scheme.primary.withValues(alpha: 0.4),
                   ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      selectedCity ?? 'Select City',
+                      style: TextStyle(
+                        color: selectedCity != null
+                            ? scheme.onSurface
+                            : scheme.onSurface.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(
+                      Icons.arrow_drop_down,
+                      color: scheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Text(
+                  'Medication For',
+                  style: TextStyle(color: scheme.onSurface),
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (context) => Container(
+                        margin: const EdgeInsets.all(20),
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        child: Text(
+                          'Medication For',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  icon: Icon(Icons.add, color: scheme.primary),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            const Center(
-              child: Text(
-                'Kindly select a prescribed medication',
-                style: TextStyle(color: Colors.black38, fontSize: 14),
+            Text(
+              'Kindly select a condition or illness you want to be treated for.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.4)),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Other comment',
+              style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.6)),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              maxLines: 4,
+              style: TextStyle(color: scheme.onSurface),
+              decoration: InputDecoration(
+                hintText: 'Type here',
+                hintStyle: TextStyle(
+                  color: scheme.onSurface.withValues(alpha: 0.4),
+                ),
+                filled: true,
+                fillColor: scheme.surfaceContainer,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(
+                    color: scheme.outline.withValues(alpha: 0.3),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: scheme.primary, width: 1.5),
+                ),
               ),
             ),
-            const SizedBox(height: 36),
-
-            // Submit
-            SizedBox(
-              width: double.infinity,
-              height: 52,
+            const SizedBox(height: 20),
+            Center(
               child: ElevatedButton(
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2D2D8E),
+                  backgroundColor: scheme.primary,
+                  foregroundColor: scheme.onPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  elevation: 0,
                 ),
-                child: const Text(
-                  'Submit',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
+                child: const Text('Submit Request'),
               ),
             ),
             const SizedBox(height: 20),
-            RichText(
-              textAlign: TextAlign.center,
-              text: TextSpan(
-                text:
-                    "If you're having difficulty reqquesting for medication, Kindly contact ",
-                style: TextStyle(color: Colors.grey[800]),
+            _buildContactText(scheme),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _requestRefill(ColorScheme scheme) {
+    String? selectedBeneficiary;
+    String? localState;
+    String? localCity;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: StatefulBuilder(
+        builder: (context, setLocalState) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Name',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: scheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    isExpanded: true,
+                    value: selectedBeneficiary,
+                    dropdownColor: scheme.surfaceContainer,
+                    style: TextStyle(color: scheme.onSurface, fontSize: 15),
+                    hint: Text(
+                      'Please select a beneficiary',
+                      style: TextStyle(
+                        color: scheme.onSurface.withValues(alpha: 0.4),
+                        fontSize: 15,
+                      ),
+                    ),
+                    icon: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: scheme.onSurface.withValues(alpha: 0.4),
+                    ),
+                    items: ['John Doe', 'Jane Doe', 'Bob Smith']
+                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                        .toList(),
+                    onChanged: (v) =>
+                        setLocalState(() => selectedBeneficiary = v),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Select State',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: scheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    isExpanded: true,
+                    value: localState,
+                    dropdownColor: scheme.surfaceContainer,
+                    style: TextStyle(color: scheme.onSurface, fontSize: 15),
+                    hint: Text(
+                      'Select',
+                      style: TextStyle(
+                        color: scheme.onSurface.withValues(alpha: 0.4),
+                        fontSize: 15,
+                      ),
+                    ),
+                    icon: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: scheme.onSurface.withValues(alpha: 0.4),
+                    ),
+                    items: nigerianStates
+                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                        .toList(),
+                    onChanged: (v) => setLocalState(() {
+                      localState = v;
+                      localCity = null; // reset city when state changes
+                    }),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Select City',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: scheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.location_on_outlined,
+                      color: scheme.onSurface.withValues(alpha: 0.4),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          value: localCity,
+                          dropdownColor: scheme.surfaceContainer,
+                          style: TextStyle(
+                            color: scheme.onSurface,
+                            fontSize: 15,
+                          ),
+                          hint: Text(
+                            'Select a city',
+                            style: TextStyle(
+                              color: scheme.onSurface.withValues(alpha: 0.4),
+                              fontSize: 15,
+                            ),
+                          ),
+                          icon: Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: scheme.onSurface.withValues(alpha: 0.4),
+                          ),
+                          // fix
+                          items: citiesFor(localState)
+                              .map(
+                                (e) =>
+                                    DropdownMenuItem(value: e, child: Text(e)),
+                              )
+                              .toList(),
+                          onChanged: citiesFor(localState).isEmpty
+                              ? null
+                              : (v) => setLocalState(() => localCity = v),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 28),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  TextSpan(
-                    text: '02013300300',
+                  Text(
+                    'Prescribed Medications',
                     style: TextStyle(
-                      color: kNavyBlue,
-                      decoration: TextDecoration.underline,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: scheme.onSurface,
                     ),
                   ),
-                  TextSpan(text: ' or send us a mail at '),
-                  TextSpan(
-                    text: 'pbm@oceanichealthng.com',
-                    style: TextStyle(
-                      color: kNavyBlue,
-                      decoration: TextDecoration.underline,
+                  GestureDetector(
+                    onTap: () {},
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: scheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.add, color: scheme.onPrimary, size: 22),
                     ),
                   ),
                 ],
               ),
-            ),
-
-            const SizedBox(height: 20),
-          ],
-        );
-      },
-    ),
-  );
-}
-
-Widget _uploadOption(IconData icon, String text) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Container(
-      padding: EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+              const SizedBox(height: 16),
+              Center(
+                child: Text(
+                  'Kindly select a prescribed medication',
+                  style: TextStyle(
+                    color: scheme.onSurface.withValues(alpha: 0.35),
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 36),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: scheme.primary,
+                    foregroundColor: scheme.onPrimary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Submit',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              _buildContactText(scheme),
+              const SizedBox(height: 20),
+            ],
+          );
+        },
       ),
-      child: Row(
+    );
+  }
+
+  Widget _buildContactText(ColorScheme scheme) {
+    return RichText(
+      textAlign: TextAlign.center,
+      text: TextSpan(
+        text:
+            "If you're having difficulty requesting for medication, Kindly contact ",
+        style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.6)),
         children: [
-          Icon(icon, color: kNavyBlue),
-          SizedBox(width: 12),
-          Text(text, style: TextStyle(fontSize: 16)),
+          TextSpan(
+            text: '02013300300',
+            style: TextStyle(
+              color: scheme.primary,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+          TextSpan(
+            text: ' or send us a mail at ',
+            style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.6)),
+          ),
+          TextSpan(
+            text: 'pbm@oceanichealthng.com',
+            style: TextStyle(
+              color: scheme.primary,
+              decoration: TextDecoration.underline,
+            ),
+          ),
         ],
       ),
-    ),
-  );
+    );
+  }
+
+  Widget _uploadOption(IconData icon, String text, ColorScheme scheme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: scheme.outline.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: scheme.primary),
+            const SizedBox(width: 12),
+            Text(text, style: TextStyle(fontSize: 16, color: scheme.onSurface)),
+          ],
+        ),
+      ),
+    );
+  }
 }

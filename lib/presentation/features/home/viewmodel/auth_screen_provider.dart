@@ -1,4 +1,3 @@
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class AuthState {
@@ -6,10 +5,10 @@ class AuthState {
   final bool obscureLoginPassword;
   final bool obscureSignUpPassword;
   final bool obscureConfirmPassword;
-  final String verificationMethod; 
+  final String verificationMethod;
 
   AuthState({
-    this.isLoginView = false, 
+    this.isLoginView = false,
     this.obscureLoginPassword = true,
     this.obscureSignUpPassword = true,
     this.obscureConfirmPassword = true,
@@ -26,8 +25,10 @@ class AuthState {
     return AuthState(
       isLoginView: isLoginView ?? this.isLoginView,
       obscureLoginPassword: obscureLoginPassword ?? this.obscureLoginPassword,
-      obscureSignUpPassword: obscureSignUpPassword ?? this.obscureSignUpPassword,
-      obscureConfirmPassword: obscureConfirmPassword ?? this.obscureConfirmPassword,
+      obscureSignUpPassword:
+          obscureSignUpPassword ?? this.obscureSignUpPassword,
+      obscureConfirmPassword:
+          obscureConfirmPassword ?? this.obscureConfirmPassword,
       verificationMethod: verificationMethod ?? this.verificationMethod,
     );
   }
@@ -50,7 +51,9 @@ class AuthViewModel extends Notifier<AuthState> {
   }
 
   void toggleConfirmPassword() {
-    state = state.copyWith(obscureConfirmPassword: !state.obscureConfirmPassword);
+    state = state.copyWith(
+      obscureConfirmPassword: !state.obscureConfirmPassword,
+    );
   }
 
   void setVerificationMethod(String method) {
@@ -58,4 +61,6 @@ class AuthViewModel extends Notifier<AuthState> {
   }
 }
 
-final authProvider = NotifierProvider<AuthViewModel, AuthState>(AuthViewModel.new);
+final authProvider = NotifierProvider<AuthViewModel, AuthState>(
+  AuthViewModel.new,
+);

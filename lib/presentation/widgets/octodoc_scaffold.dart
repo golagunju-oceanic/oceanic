@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:oceanic/core/constants/app_colors.dart';
 
 class OctodocScaffold extends StatelessWidget {
   final Widget child;
@@ -13,8 +12,10 @@ class OctodocScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
+      backgroundColor: scheme.surface,
       body: Column(
         children: [
           SafeArea(
@@ -27,8 +28,8 @@ class OctodocScaffold extends StatelessWidget {
                   onPressed: () =>
                       Navigator.of(context).popUntil((r) => r.isFirst),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: kNavyBlue,
-                    foregroundColor: Colors.white,
+                    backgroundColor: scheme.primary,
+                    foregroundColor: scheme.onPrimary,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20,
                       vertical: 10,
@@ -50,25 +51,31 @@ class OctodocScaffold extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 6),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Icon(Icons.healing, color: Colors.red, size: 16),
-                SizedBox(width: 4),
+              children: [
+                const Icon(Icons.healing, color: Colors.red, size: 16),
+                const SizedBox(width: 4),
                 Text(
                   'Powered by Octodoc',
-                  style: TextStyle(fontSize: 12, color: Colors.black54),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onSurface.withValues(alpha: 0.5),
+                  ),
                 ),
               ],
             ),
           ),
-          Container(color: Colors.grey.shade200, height: 1),
-          // Step header with back arrow and dots
+          Divider(height: 1, color: scheme.onSurface.withValues(alpha: 0.1)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               children: [
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.arrow_back, size: 22),
+                  child: Icon(
+                    Icons.arrow_back,
+                    size: 22,
+                    color: scheme.onSurface,
+                  ),
                 ),
                 const Spacer(),
                 Row(
@@ -81,8 +88,8 @@ class OctodocScaffold extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: i + 1 == currentStep
-                            ? kTeal
-                            : Colors.grey.shade300,
+                            ? scheme.secondary
+                            : scheme.onSurface.withValues(alpha: 0.15),
                       ),
                     ),
                   ),
@@ -90,12 +97,11 @@ class OctodocScaffold extends StatelessWidget {
               ],
             ),
           ),
-          // Main content in a white card
           Expanded(
             child: Container(
               margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: scheme.surfaceContainer,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(

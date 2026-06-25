@@ -5,10 +5,15 @@ class BackgroundImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context).brightness;
     return Container(
       decoration: BoxDecoration(
         image: DecorationImage(
-          image: AssetImage('assets/images/bg_img.jpg'),
+          image: AssetImage(
+            theme == Brightness.dark
+                ? 'assets/images/bg_img_dark.png'
+                : 'assets/images/bg_img.png',
+          ),
           fit: BoxFit.cover,
         ),
       ),

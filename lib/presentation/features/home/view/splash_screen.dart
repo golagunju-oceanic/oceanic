@@ -21,11 +21,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late Animation<double> _logoOpacity;
 
   late AnimationController _textController;
-  late Animation<Offset> _textSlide;
-  late Animation<double> _textOpacity;
+  // late Animation<Offset> _textSlide;
+  // late Animation<double> _textOpacity;
 
   late AnimationController _taglineController;
-  late Animation<double> _taglineOpacity;
+  // late Animation<double> _taglineOpacity;
 
   @override
   void initState() {
@@ -60,22 +60,22 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-    _textSlide = Tween<Offset>(
-      begin: const Offset(0, 0.5),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _textController, curve: Curves.easeOut));
-    _textOpacity = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _textController, curve: Curves.easeIn));
+    // _textSlide = Tween<Offset>(
+    //   begin: const Offset(0, 0.5),
+    //   end: Offset.zero,
+    // ).animate(CurvedAnimation(parent: _textController, curve: Curves.easeOut));
+    // _textOpacity = Tween<double>(
+    //   begin: 0.0,
+    //   end: 1.0,
+    // ).animate(CurvedAnimation(parent: _textController, curve: Curves.easeIn));
 
     _taglineController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-    _taglineOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _taglineController, curve: Curves.easeIn),
-    );
+    // _taglineOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+    //   CurvedAnimation(parent: _taglineController, curve: Curves.easeIn),
+    // );
 
     _startAnimations();
   }
@@ -113,34 +113,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    // ── Detect current theme mode ──────────────────────────────
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // ── Dynamic colors based on theme ─────────────────────────
-    final bgGradientColors = isDark
-        ? const [Color(0xFF0A0A0F), Color(0xFF0D1B2A), Color(0xFF0A0A0F)]
-        : const [Color(0xFFF0F4FF), Color(0xFFE8F4F8), Color(0xFFF0F4FF)];
-
-    final accentPrimary = isDark
-        ? const Color(0xFF00E5FF)
-        : const Color(0xFF2D2D8E);
-
-    final accentSecondary = isDark
-        ? const Color(0xFF7C4DFF)
-        : const Color(0xFF3CC8C8);
-
-    final ringColor = isDark
-        ? const Color(0xFFFFD900)
-        : const Color(0xFFF5A623);
-
-    final taglineColor = isDark
-        ? const Color(0xFF607D8B)
-        : const Color(0xFF9E9E9E);
-
-    final topGlowOpacity = isDark ? 0.08 : 0.12;
-    final bottomGlowOpacity = isDark ? 0.07 : 0.10;
-
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
+      backgroundColor: scheme.surface,
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -148,12 +123,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: bgGradientColors,
+            colors: [scheme.surface, scheme.surfaceContainer, scheme.surface],
           ),
         ),
         child: Stack(
           children: [
-            // Background glow — top right
             Positioned(
               top: -80.r,
               right: -80.r,
@@ -164,15 +138,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      accentPrimary.withValues(alpha: topGlowOpacity),
+                      scheme.primary.withValues(alpha: 0.1),
                       Colors.transparent,
                     ],
                   ),
                 ),
               ),
             ),
-
-            // Background glow — bottom left
             Positioned(
               bottom: -100.r,
               left: -60.r,
@@ -183,15 +155,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      accentSecondary.withValues(alpha: bottomGlowOpacity),
+                      scheme.secondary.withValues(alpha: 0.08),
                       Colors.transparent,
                     ],
                   ),
                 ),
               ),
             ),
-
-            // Main content
             Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -214,7 +184,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: ringColor,
+                                    color: scheme.tertiary,
                                     width: 2,
                                   ),
                                 ),
@@ -222,8 +192,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                             ),
                           ),
                         ),
-
-                        // Logo circle
                         AnimatedBuilder(
                           animation: _logoController,
                           builder: (_, _) => Opacity(
@@ -233,7 +201,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                               child: SizedBox(
                                 width: 500.r,
                                 height: 500.r,
-                                child: Image.asset('assets/images/OIP.webp'),
+                                child: Image.asset(
+                                  scheme.brightness == Brightness.dark
+                                      ? 'assets/images/OHMLdark.png'
+                                      : 'assets/images/OHML.png',
+                                ),
                               ),
                             ),
                           ),
@@ -241,46 +213,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 36),
-
-  
-                  SlideTransition(
-                    position: _textSlide,
-                    child: FadeTransition(
-                      opacity: _textOpacity,
-                      child: ShaderMask(
-                        shaderCallback: (bounds) => LinearGradient(
-                          colors: [accentPrimary, accentSecondary],
-                        ).createShader(bounds),
-                        child: const Text(
-                          'OCEANIC HEALTH',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 35,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            letterSpacing: 12,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                 10.verticalSpace,
-
-                  FadeTransition(
-                    opacity: _taglineOpacity,
-                    child: Text(
-                      'Access quality healthcare services',
-                      style: TextStyle(
-                        fontSize: 13.sp,
-                        color: taglineColor,
-                        letterSpacing: 3.r,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ),
+                  10.verticalSpace,
                 ],
               ),
             ),

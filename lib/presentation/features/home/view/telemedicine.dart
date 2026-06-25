@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:oceanic/core/constants/app_colors.dart';
 import 'package:oceanic/presentation/features/home/view/doctor_selection_screen.dart';
 
 class TelemedicineConsentScreen extends StatefulWidget {
@@ -15,16 +14,21 @@ class _TelemedicineConsentScreenState extends State<TelemedicineConsentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: scheme.surface,
       body: Column(
         children: [
           Container(
-            color: kNavyBlue,
+            color: scheme.primary,
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
                     GestureDetector(
@@ -34,9 +38,11 @@ class _TelemedicineConsentScreenState extends State<TelemedicineConsentScreen> {
                         height: 40,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white54),
+                          border: Border.all(
+                            color: scheme.onPrimary.withValues(alpha: 0.5),
+                          ),
                         ),
-                        child: const Icon(Icons.arrow_back, color: Colors.white),
+                        child: Icon(Icons.arrow_back, color: scheme.onPrimary),
                       ),
                     ),
                     const Spacer(),
@@ -45,9 +51,11 @@ class _TelemedicineConsentScreenState extends State<TelemedicineConsentScreen> {
                       height: 40,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white54),
+                        border: Border.all(
+                          color: scheme.onPrimary.withValues(alpha: 0.5),
+                        ),
                       ),
-                      child: const Icon(Icons.menu, color: Colors.white),
+                      child: Icon(Icons.menu, color: scheme.onPrimary),
                     ),
                   ],
                 ),
@@ -60,27 +68,36 @@ class _TelemedicineConsentScreenState extends State<TelemedicineConsentScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Telemedicine',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
+                      color: scheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'Dear valued customer,',
-                    style: TextStyle(fontSize: 15),
+                    style: TextStyle(fontSize: 15, color: scheme.onSurface),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'We will share some of your data with OctoDoc to provide you with Telemedicine services. We have taken all necessary steps to ensure your privacy and security.',
-                    style: TextStyle(fontSize: 14, height: 1.5),
+                    style: TextStyle(
+                      fontSize: 14,
+                      height: 1.5,
+                      color: scheme.onSurface.withValues(alpha: 0.75),
+                    ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'The data we share includes your Name, Gender, Phone Numbers, Email, DOB and enrollee/member ID.',
-                    style: TextStyle(fontSize: 14, height: 1.5),
+                    style: TextStyle(
+                      fontSize: 14,
+                      height: 1.5,
+                      color: scheme.onSurface.withValues(alpha: 0.75),
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Row(
@@ -88,15 +105,19 @@ class _TelemedicineConsentScreenState extends State<TelemedicineConsentScreen> {
                     children: [
                       Checkbox(
                         value: _agreed,
-                        activeColor: kNavyBlue,
+                        activeColor: scheme.primary,
                         onChanged: (v) => setState(() => _agreed = v ?? false),
                       ),
-                      const Expanded(
+                      Expanded(
                         child: Padding(
-                          padding: EdgeInsets.only(top: 10),
+                          padding: const EdgeInsets.only(top: 10),
                           child: Text(
                             'Please give us permission to do so by ticking the checkbox. Thank you!',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: scheme.onSurface,
+                            ),
                           ),
                         ),
                       ),
@@ -107,18 +128,22 @@ class _TelemedicineConsentScreenState extends State<TelemedicineConsentScreen> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: _agreed
-                          ? () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const DoctorSelectionScreen(),
-                                ),
-                              );
-                            }
+                          ? () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const DoctorSelectionScreen(),
+                              ),
+                            )
                           : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: kNavyBlue,
-                        foregroundColor: Colors.white,
+                        backgroundColor: scheme.primary,
+                        foregroundColor: scheme.onPrimary,
+                        disabledBackgroundColor: scheme.onSurface.withValues(
+                          alpha: 0.12,
+                        ),
+                        disabledForegroundColor: scheme.onSurface.withValues(
+                          alpha: 0.38,
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
@@ -126,7 +151,10 @@ class _TelemedicineConsentScreenState extends State<TelemedicineConsentScreen> {
                       ),
                       child: const Text(
                         'Continue',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),

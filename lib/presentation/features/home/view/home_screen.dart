@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:oceanic/core/constants/app_colors.dart';
 import 'package:oceanic/presentation/features/home/view/authorization_screen.dart';
-
 import 'package:oceanic/presentation/features/home/view/health_provider.dart';
 import 'package:oceanic/presentation/features/home/view/health_record.dart';
 import 'package:oceanic/presentation/features/home/view/medical_request.dart';
@@ -21,13 +20,13 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _currentBanner = 0;
-
   final PageController _pageController = PageController();
+  final ScrollController _scrollController = ScrollController();
   Timer? _bannerTimer;
+
   @override
   void initState() {
     super.initState();
-
     WidgetsBinding.instance.addPostFrameCallback((_) => _startBannerTimer());
   }
 
@@ -43,7 +42,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
   }
 
-  final ScrollController _scrollController = ScrollController();
   @override
   void dispose() {
     _bannerTimer?.cancel();
@@ -119,35 +117,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // final userAsync = ref.watch(authAsyncProvider);
+    final scheme = Theme.of(context).colorScheme;
     final screenHeight = MediaQuery.of(context).size.height;
     final topPadding = MediaQuery.of(context).padding.top;
+
     return Container(
-      color: kNavyBlue,
+      color: scheme.primary,
       child: Column(
         children: [
-          Container(color: Colors.white, height: topPadding),
+          Container(color: scheme.surface, height: topPadding),
           Expanded(
             child: Scaffold(
               drawer: CustomDrawer(),
-              backgroundColor: Colors.white,
+              backgroundColor: scheme.surface,
               body: Stack(
                 children: [
                   SingleChildScrollView(
                     controller: _scrollController,
-                    // dragStartBehavior: DragStartBehavior.start,
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.only(top: 80),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Padding(
-                          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                           child: Text(
                             'Sustaining your peace',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w500,
+                              color: scheme.onSurface,
                             ),
                           ),
                         ),
@@ -160,8 +159,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 itemCount: _banners.length,
                                 onPageChanged: (i) =>
                                     setState(() => _currentBanner = i),
-                                itemBuilder: (_, i) =>
-                                    _buildBanner(_banners[i], screenHeight),
+                                itemBuilder: (_, i) => _buildBanner(
+                                  _banners[i],
+                                  screenHeight,
+                                  scheme,
+                                ),
                               ),
                               Positioned(
                                 bottom: 8,
@@ -180,8 +182,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         color: _currentBanner == i
-                                            ? kNavyBlue
-                                            : Colors.grey.shade400,
+                                            ? scheme.primary
+                                            : scheme.onSurface.withValues(
+                                                alpha: 0.3,
+                                              ),
                                       ),
                                     ),
                                   ),
@@ -195,7 +199,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Column(
                             children: _menuItems
-                                .map((item) => _buildMenuItem(context, item))
+                                .map(
+                                  (item) =>
+                                      _buildMenuItem(context, item, scheme),
+                                )
                                 .toList(),
                           ),
                         ),
@@ -203,8 +210,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ],
                     ),
                   ),
-
-                  // --- Floating App Bar ---
                   FloatingAppBar(
                     scrollController: _scrollController,
                     username: 'User',
@@ -212,21 +217,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ],
               ),
             ),
-            // bottomNavigationBar: CustomBottomNavBar(),
           ),
-
-          // Container(color: kNavyBlue, height: bottomPadding),
         ],
       ),
     );
   }
 
-  Widget _buildBanner(Map<String, String> banner, double screenHeight) {
+  Widget _buildBanner(
+    Map<String, String> banner,
+    double screenHeight,
+    ColorScheme scheme,
+  ) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: Colors.blueGrey.shade300,
+        color: scheme.surfaceContainerHighest,
       ),
       child: Stack(
         children: [
@@ -250,7 +256,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: scheme.surface,
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Image.asset(
@@ -267,7 +273,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               constraints: const BoxConstraints(maxWidth: 230),
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: kTeal.withValues(alpha: 0.8),
+                color: scheme.secondary.withValues(alpha: 0.85),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
@@ -295,15 +301,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildMenuItem(BuildContext context, Map<String, dynamic> item) {
+  Widget _buildMenuItem(
+    BuildContext context,
+    Map<String, dynamic> item,
+    ColorScheme scheme,
+  ) {
     return Container(
       margin: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.surfaceContainer,
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -334,13 +344,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         title: Text(
           item['title'] as String,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
+            color: scheme.onSurface,
+          ),
         ),
         subtitle: Text(
           item['subtitle'] as String,
-          style: const TextStyle(color: kTextGray, fontSize: 12),
+          style: TextStyle(
+            color: scheme.onSurface.withValues(alpha: 0.55),
+            fontSize: 12,
+          ),
         ),
-        trailing: const Icon(Icons.chevron_right, color: kTextGray),
+        trailing: Icon(
+          Icons.chevron_right,
+          color: scheme.onSurface.withValues(alpha: 0.4),
+        ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       ),
     );

@@ -11,11 +11,14 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final ScrollController _scrollController = ScrollController();
+
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       drawer: CustomDrawer(),
-      backgroundColor: const Color(0xFFF4F6FB),
+      backgroundColor: scheme.surface,
       body: SafeArea(
         child: Stack(
           children: [
@@ -34,18 +37,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'My Card',
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1A1A2E),
+                              color: scheme.onSurface,
                             ),
                           ),
                           const SizedBox(height: 20),
-                          _buildSelfSection(),
+                          _buildSelfSection(scheme),
                           const SizedBox(height: 24),
-                          _buildMemberCard(),
+                          _buildMemberCard(scheme),
                         ],
                       ),
                     ),
@@ -60,12 +63,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ],
         ),
       ),
-
-      // bottomNavigationBar: CustomBottomNavBar(),
     );
   }
 
-  Widget _buildSelfSection() {
+  Widget _buildSelfSection(ColorScheme scheme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -74,8 +75,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           children: [
             CircleAvatar(
               radius: 24,
-              backgroundColor: Colors.grey.shade300,
-              child: const Icon(Icons.person, size: 26, color: Colors.grey),
+              backgroundColor: scheme.onSurface.withValues(alpha: 0.12),
+              child: Icon(
+                Icons.person,
+                size: 26,
+                color: scheme.onSurface.withValues(alpha: 0.4),
+              ),
             ),
             const SizedBox(width: 14),
             Text(
@@ -83,7 +88,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1A2E),
+                color: scheme.onSurface,
               ),
             ),
           ],
@@ -91,19 +96,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         const SizedBox(height: 16),
         Row(
           children: [
-            const Text(
+            Text(
               'Beneficiary',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1A2E),
+                color: scheme.onSurface,
               ),
             ),
             const SizedBox(width: 10),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5A623),
+                color: scheme.tertiary,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Text(
@@ -121,14 +126,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildMemberCard() {
+  Widget _buildMemberCard(ColorScheme scheme) {
+    // The member card intentionally keeps a light appearance in both modes
+    // since it represents a physical ID card with fixed branding colors.
+    const cardBrand = Color(0xFF2C2F7A);
+    const cardText = Color(0xFF444444);
+    const cardSubtext = Color(0xFF888888);
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: Colors.black.withValues(alpha: 0.10),
             blurRadius: 20,
             offset: const Offset(0, 6),
           ),
@@ -141,7 +152,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Left: photo + logo
                 Column(
                   children: [
                     Container(
@@ -162,17 +172,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Logo placeholder
                     Container(
                       width: 150,
                       height: 100,
                       decoration: BoxDecoration(
-                        // color: Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(8),
-                        // border: Border.all(
-                        //   color: Colors.grey.shade200,
-                        //   width: 1,
-                        // ),
                       ),
                       child: Image.asset(
                         'assets/images/logo.png',
@@ -186,14 +190,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF2C2F7A),
+                        color: cardBrand,
                         height: 1.4,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(width: 16),
-                // Right: info fields
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -216,7 +219,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ],
             ),
           ),
-          // Colored bar
           Container(
             height: 4,
             decoration: const BoxDecoration(
@@ -229,54 +231,48 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
             ),
           ),
-          // Footer text
           Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                const Text(
+                Text(
                   'The bearer of this card has subscribed to Oceanic Health Management Limited healthcare plan. It entitles the bearer to receive medical care from the chosen primary healthcare provider and emergency care at any Oceanic Health registered provider.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF444444),
-                    height: 1.6,
-                  ),
+                  style: TextStyle(fontSize: 12, color: cardText, height: 1.6),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'For emergencies and complaint:',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF444444)),
+                  style: TextStyle(fontSize: 12, color: cardText),
                 ),
-                const Text(
+                Text(
                   'Call: 02013300300',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A1A2E),
+                    color: cardBrand,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'E-mail: hmo@oceanichealthng.com',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF444444)),
+                  style: TextStyle(fontSize: 12, color: cardText),
                 ),
-                const Text(
+                Text(
                   'Web: oceanichealth.com',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF444444)),
+                  style: TextStyle(fontSize: 12, color: cardText),
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   'If found, please return to:',
-                  style: TextStyle(fontSize: 11, color: Color(0xFF888888)),
+                  style: TextStyle(fontSize: 11, color: cardSubtext),
                 ),
-                const Text(
+                Text(
                   '266, Murtala Muhammed Way, Alagomeji, Yaba, Lagos State.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 11, color: Color(0xFF888888)),
+                  style: TextStyle(fontSize: 11, color: cardSubtext),
                 ),
                 const SizedBox(height: 20),
-                // Signatures
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [_buildSignature(), _buildSignature()],
@@ -284,7 +280,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ],
             ),
           ),
-          // Bottom colored bar
           Container(
             height: 6,
             decoration: const BoxDecoration(
@@ -347,8 +342,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         Container(
           width: 120,
           height: 40,
-          decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: Colors.grey.shade400)),
+          decoration: const BoxDecoration(
+            border: Border(bottom: BorderSide(color: Color(0xFFBBBBBB))),
           ),
         ),
         const SizedBox(height: 4),
