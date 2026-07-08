@@ -2,7 +2,7 @@ import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:oceanic/core/constants/app_colors.dart';
 import 'package:oceanic/presentation/features/home/view/Profile.dart';
-import 'package:oceanic/presentation/features/home/view/home_screen.dart';
+import 'package:oceanic/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:oceanic/presentation/features/home/view/reimbursement.dart';
 
 class CustomBottomNavBar extends StatefulWidget {

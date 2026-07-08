@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:oceanic/firebase_auth/auth_services.dart';
-import 'package:oceanic/presentation/features/home/viewSample/auth_screen.dart';
+// import 'package:oceanic/firebase_auth/auth_services.dart';
+import 'package:oceanic/features/auth/presentations/screen/auth_screen.dart';
 
 class DeleteProfilePage extends StatefulWidget {
   const DeleteProfilePage({super.key});
@@ -243,7 +243,7 @@ class _DeleteProfilePageState extends State<DeleteProfilePage> {
           ),
           TextButton(
             onPressed: () {
-              AuthServices().signOut();
+              // AuthServices().signOut();
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(builder: (context) => const AuthScreen()),
               );

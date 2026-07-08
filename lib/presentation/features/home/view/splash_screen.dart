@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:oceanic/presentation/features/home/viewSample/auth_screen.dart';
+import 'package:go_router/go_router.dart';
+import 'package:oceanic/features/auth/presentations/provider/auth_provider.dart';
+import 'package:oceanic/features/auth/presentations/screen/auth_screen.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -31,6 +33,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   void initState() {
     super.initState();
 
+    Future.microtask(() async {
+      await ref.read(authProvider.notifier).initialize();
+
+      final auth = ref.read(authProvider);
+
+      if (auth.isAuthenticated) {
+        context.go("/home");
+      } else {
+        context.go("/login");
+      }
+    });
     _ringController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),

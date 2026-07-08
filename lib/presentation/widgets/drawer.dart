@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:oceanic/core/constants/app_colors.dart';
-import 'package:oceanic/firebase_auth/auth_services.dart';
+// import 'package:oceanic/firebase_auth/auth_services.dart';
 import 'package:oceanic/presentation/features/home/view/settings.dart';
-import 'package:oceanic/presentation/features/home/viewSample/auth_screen.dart';
+import 'package:oceanic/features/auth/presentations/screen/auth_screen.dart';
 
 class CustomDrawer extends StatelessWidget {
   const CustomDrawer({super.key});
@@ -48,7 +48,7 @@ class CustomDrawer extends StatelessWidget {
             leading: const Icon(Icons.logout_outlined),
             title: const Text('Logout'),
             onTap: () {
-              AuthServices().signOut();
+              // AuthServices().signOut();
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(builder: (context) => const AuthScreen()),
               );

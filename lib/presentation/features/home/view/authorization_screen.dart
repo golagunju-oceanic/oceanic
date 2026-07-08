@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:oceanic/features/dashboard/data/models/recent_authorization.dart';
+import 'package:oceanic/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:oceanic/presentation/widgets/drawer.dart';
 
 class AuthorizationScreen extends ConsumerStatefulWidget {
@@ -12,30 +14,6 @@ class AuthorizationScreen extends ConsumerStatefulWidget {
 
 class _AuthorizationScreenState extends ConsumerState<AuthorizationScreen> {
   final ScrollController _scrollController = ScrollController();
-
-  final List<Map<String, dynamic>> authorizations = [
-    {
-      'id': 'AUTH001',
-      'service': 'MRI Scan',
-      'hospital': "St. Mary's Hospital",
-      'status': 'PENDING',
-      'date': '2026-04-12',
-    },
-    {
-      'id': 'AUTH002',
-      'service': 'Surgery',
-      'hospital': 'City Clinic',
-      'status': 'APPROVED',
-      'date': '2026-04-05',
-    },
-    {
-      'id': 'AUTH003',
-      'service': 'Blood Test',
-      'hospital': 'HealthLab',
-      'status': 'REJECTED',
-      'date': '2026-04-02',
-    },
-  ];
 
   DateTimeRange? _selectedDateRange;
 
@@ -142,11 +120,40 @@ class _AuthorizationScreenState extends ConsumerState<AuthorizationScreen> {
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              itemCount: authorizations.length,
-              itemBuilder: (context, index) =>
-                  _buildCard(authorizations[index], scheme),
+            child: Consumer(
+              builder: (context, ref, child) {
+                final dashboard = ref.watch(dashboardProvider);
+
+                return dashboard.when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (error, _) => Center(child: Text(error.toString())),
+                  data: (data) {
+                    final authorizations = data.recentAuthorizations;
+
+                    if (authorizations.isEmpty) {
+                      return const Center(
+                        child: Text("No authorizations found"),
+                      );
+                    }
+
+                    return RefreshIndicator(
+                      onRefresh: () => ref
+                          .read(dashboardProvider.notifier)
+                          .refreshDashboard(),
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        itemCount: authorizations.length,
+                        itemBuilder: (context, index) {
+                          final auth = authorizations[index];
+
+                          return _buildCard(auth, scheme);
+                        },
+                      ),
+                    );
+                  },
+                );
+              },
             ),
           ),
         ],
@@ -154,9 +161,9 @@ class _AuthorizationScreenState extends ConsumerState<AuthorizationScreen> {
     );
   }
 
-  Widget _buildCard(Map<String, dynamic> auth, ColorScheme scheme) {
+  Widget _buildCard(RecentAuthorization auth, ColorScheme scheme) {
     Color statusColor;
-    switch (auth['status']) {
+    switch (auth.status?.toUpperCase()) {
       case 'APPROVED':
         statusColor = const Color(0xFF28A745);
         break;
@@ -178,7 +185,7 @@ class _AuthorizationScreenState extends ConsumerState<AuthorizationScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              auth['service'],
+              auth.service!,
               style: TextStyle(
                 fontSize: 18.sp,
                 fontWeight: FontWeight.bold,
@@ -187,7 +194,7 @@ class _AuthorizationScreenState extends ConsumerState<AuthorizationScreen> {
             ),
             SizedBox(height: 8.h),
             Text(
-              'Hospital: ${auth['hospital']}',
+              'Hospital: ${auth.hospital}',
               style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.7)),
             ),
             SizedBox(height: 8.h),
@@ -203,7 +210,7 @@ class _AuthorizationScreenState extends ConsumerState<AuthorizationScreen> {
                 ),
                 SizedBox(width: 10.w),
                 Text(
-                  'Status: ${auth['status']}',
+                  'Status: ${auth.status}',
                   style: TextStyle(
                     color: statusColor,
                     fontWeight: FontWeight.w600,
@@ -213,7 +220,7 @@ class _AuthorizationScreenState extends ConsumerState<AuthorizationScreen> {
             ),
             SizedBox(height: 8.h),
             Text(
-              'Date: ${auth['date']}',
+              'Date: ${auth.createdAt}',
               style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.7)),
             ),
           ],
