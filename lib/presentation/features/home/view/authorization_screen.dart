@@ -132,8 +132,84 @@ class _AuthorizationScreenState extends ConsumerState<AuthorizationScreen> {
                     final authorizations = data.recentAuthorizations;
 
                     if (authorizations.isEmpty) {
-                      return const Center(
-                        child: Text("No authorizations found"),
+                      return Column(
+                        children: [
+                          Consumer(
+                            builder: (context, ref, child) {
+                              final dashboard = ref.watch(dashboardProvider);
+
+                              return dashboard.when(
+                                loading: () => const SizedBox(),
+                                error: (error, stackTrace) {
+                                  debugPrint(error.toString());
+                                  debugPrint(stackTrace.toString());
+
+                                  return Center(child: Text(error.toString()));
+                                },
+                                data: (data) {
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 10,
+                                    ),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(18),
+                                      decoration: BoxDecoration(
+                                        color: scheme.primary,
+                                        borderRadius: BorderRadius.circular(18),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            data.member.fullName,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            "Member ID: ${data.member.memberId}",
+                                            style: const TextStyle(
+                                              color: Colors.white70,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 20),
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceAround,
+                                            children: [
+                                              _buildStat(
+                                                "Pending",
+                                                data.authorizations.pending,
+                                                Colors.orange,
+                                              ),
+                                              _buildStat(
+                                                "Approved",
+                                                data.authorizations.approved,
+                                                Colors.green,
+                                              ),
+                                              _buildStat(
+                                                "Rejected",
+                                                data.authorizations.rejected,
+                                                Colors.red,
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+
+                          const Center(child: Text("No authorizations found")),
+                        ],
                       );
                     }
 
@@ -228,4 +304,21 @@ class _AuthorizationScreenState extends ConsumerState<AuthorizationScreen> {
       ),
     );
   }
+}
+
+Widget _buildStat(String title, int value, Color color) {
+  return Column(
+    children: [
+      Text(
+        value.toString(),
+        style: TextStyle(
+          color: color,
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      const SizedBox(height: 4),
+      Text(title, style: const TextStyle(color: Colors.white70)),
+    ],
+  );
 }

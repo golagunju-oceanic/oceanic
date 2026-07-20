@@ -1,11 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:oceanic/core/constants/app_colors.dart';
 import 'package:oceanic/features/auth/presentations/provider/auth_provider.dart';
 import 'package:oceanic/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:oceanic/presentation/features/home/view/authorization_screen.dart';
-import 'package:oceanic/presentation/features/home/view/health_provider.dart';
+import 'package:oceanic/features/health_provider/presentation/views/health_provider.dart';
 import 'package:oceanic/presentation/features/home/view/health_record.dart';
 import 'package:oceanic/presentation/features/home/view/medical_request.dart';
 import 'package:oceanic/features/policy/presentation/view/policy_details.dart';
@@ -201,79 +200,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
 
                         const SizedBox(height: 16),
-                        Consumer(
-                          builder: (context, ref, child) {
-                            final dashboard = ref.watch(dashboardProvider);
-
-                            return dashboard.when(
-                              loading: () => const SizedBox(),
-                              error: (error, stackTrace) {
-                                debugPrint(error.toString());
-                                debugPrint(stackTrace.toString());
-
-                                return Center(child: Text(error.toString()));
-                              },
-                              data: (data) {
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 10,
-                                  ),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(18),
-                                    decoration: BoxDecoration(
-                                      color: scheme.primary,
-                                      borderRadius: BorderRadius.circular(18),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          data.member.fullName,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          "Member ID: ${data.member.memberId}",
-                                          style: const TextStyle(
-                                            color: Colors.white70,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 20),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceAround,
-                                          children: [
-                                            _buildStat(
-                                              "Pending",
-                                              data.authorizations.pending,
-                                              Colors.orange,
-                                            ),
-                                            _buildStat(
-                                              "Approved",
-                                              data.authorizations.approved,
-                                              Colors.green,
-                                            ),
-                                            _buildStat(
-                                              "Rejected",
-                                              data.authorizations.rejected,
-                                              Colors.red,
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        ),
 
                         const SizedBox(height: 16),
                         Padding(
@@ -467,19 +393,3 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-Widget _buildStat(String title, int value, Color color) {
-  return Column(
-    children: [
-      Text(
-        value.toString(),
-        style: TextStyle(
-          color: color,
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      const SizedBox(height: 4),
-      Text(title, style: const TextStyle(color: Colors.white70)),
-    ],
-  );
-}

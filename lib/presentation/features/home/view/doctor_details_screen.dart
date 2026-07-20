@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:oceanic/presentation/widgets/octodoc_scaffold.dart';
+import 'package:oceanic/features/Telemedicine/presentation/view/audio_consultation_screen.dart';
+import 'package:oceanic/features/Telemedicine/presentation/view/chat_consultation_screen.dart';
+import 'package:oceanic/features/Telemedicine/presentation/view/video_consultation_screen.dart';
+import 'package:oceanic/presentation/widgets/telemedicine_scaffold.dart';
 
 class DoctorDetailsScreen extends StatefulWidget {
   const DoctorDetailsScreen({super.key});
@@ -27,11 +30,60 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
     super.dispose();
   }
 
+  void _onConfirm() {
+    switch (_selectedMode) {
+      case 'Chat':
+        _startChatConsultation();
+        break;
+      case 'Phone':
+        _startPhoneConsultation();
+        break;
+      case 'Video':
+        _startVideoConsultation();
+        break;
+    }
+  }
+
+  void _startChatConsultation() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChatConsultationScreen(
+          // symptoms: _symptomsController.text,
+        ),
+      ),
+    );
+  }
+
+  void _startPhoneConsultation() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AudioConsultationScreen(
+          channelName: "consultation-room-1",
+          // symptoms: _symptomsController.text,
+        ),
+      ),
+    );
+  }
+
+  void _startVideoConsultation() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => VideoConsultationScreen(
+          channelName: "consultation-room-1",
+          // symptoms: _symptomsController.text,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    return OctodocScaffold(
+    return TelemedicineScaffold(
       currentStep: 3,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -81,7 +133,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                 color: scheme.surfaceContainer,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: scheme.onSurface.withValues(alpha: 0.12),
+                  color: scheme.primary.withValues(alpha: 0.12),
                 ),
               ),
               child: TextField(
@@ -105,17 +157,13 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.folder_outlined,
-                    color: scheme.secondary,
-                    size: 22,
-                  ),
+                  Icon(Icons.folder_outlined, color: scheme.primary, size: 22),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Upload File',
                       style: TextStyle(
-                        color: scheme.onSurface.withValues(alpha: 0.5),
+                        color: scheme.primary.withValues(alpha: 0.5),
                         fontSize: 14,
                       ),
                     ),
@@ -124,10 +172,10 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: scheme.secondary,
+                      color: scheme.primary,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.add, color: scheme.onSecondary, size: 16),
+                    child: Icon(Icons.add, color: scheme.onPrimary, size: 16),
                   ),
                 ],
               ),
@@ -165,10 +213,10 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _selectedMode != null ? () {} : null,
+                onPressed: _selectedMode != null ? _onConfirm : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: scheme.secondary,
-                  foregroundColor: scheme.onSecondary,
+                  backgroundColor: scheme.primary,
+                  foregroundColor: scheme.onPrimary,
                   disabledBackgroundColor: scheme.onSurface.withValues(
                     alpha: 0.12,
                   ),
@@ -207,8 +255,8 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
             icon,
             size: 36,
             color: selected
-                ? scheme.secondary
-                : scheme.onSurface.withValues(alpha: 0.7),
+                ? scheme.primary
+                : scheme.onSurface.withValues(alpha: 0.4),
           ),
           const SizedBox(height: 4),
           Text(
@@ -226,7 +274,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
               shape: BoxShape.circle,
               border: Border.all(
                 color: selected
-                    ? scheme.secondary
+                    ? scheme.primary
                     : scheme.onSurface.withValues(alpha: 0.35),
                 width: 2,
               ),
@@ -237,7 +285,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                       width: 10,
                       height: 10,
                       decoration: BoxDecoration(
-                        color: scheme.secondary,
+                        color: scheme.primary,
                         shape: BoxShape.circle,
                       ),
                     ),

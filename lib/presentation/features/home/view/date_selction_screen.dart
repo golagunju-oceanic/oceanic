@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+
+import 'package:intl/intl.dart';
 import 'package:oceanic/presentation/features/home/view/doctor_details_screen.dart';
-import 'package:oceanic/presentation/widgets/octodoc_scaffold.dart';
+import 'package:oceanic/presentation/widgets/telemedicine_scaffold.dart';
 
 class DateSelectionScreen extends StatefulWidget {
   const DateSelectionScreen({super.key});
@@ -10,16 +12,9 @@ class DateSelectionScreen extends StatefulWidget {
 }
 
 class _DateSelectionScreenState extends State<DateSelectionScreen> {
-  int _selectedDayIndex = 3;
+  late DateTime _focusedMonth;
+  late DateTime _selectedDate;
   String? _selectedTime;
-
-  final List<Map<String, String>> _days = [
-    {'day': 'MON', 'date': '5'},
-    {'day': 'TUE', 'date': '6'},
-    {'day': 'WED', 'date': '7'},
-    {'day': 'THU', 'date': '8'},
-    {'day': 'FRI', 'date': '9'},
-  ];
 
   final List<String> _times = [
     '12:00 PM',
@@ -31,10 +26,31 @@ class _DateSelectionScreenState extends State<DateSelectionScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _focusedMonth = DateTime(now.year, now.month);
+    _selectedDate = now;
+  }
+
+  List<DateTime> get _weekDays {
+    final startOfWeek = _selectedDate.subtract(
+      Duration(days: _selectedDate.weekday - 1),
+    );
+    return List.generate(7, (i) => startOfWeek.add(Duration(days: i)));
+  }
+
+  void _changeMonth(int delta) {
+    setState(() {
+      _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + delta);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    return OctodocScaffold(
+    return TelemedicineScaffold(
       currentStep: 2,
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -54,31 +70,46 @@ class _DateSelectionScreenState extends State<DateSelectionScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(
-                  Icons.chevron_left,
-                  color: scheme.onSurface.withValues(alpha: 0.4),
+                IconButton(
+                  onPressed: () => _changeMonth(-1),
+                  icon: Icon(
+                    Icons.chevron_left,
+                    color: scheme.onSurface.withValues(alpha: 0.4),
+                  ),
                 ),
                 Text(
-                  'MAY 2025',
+                  DateFormat('MMMM yyyy').format(_focusedMonth).toUpperCase(),
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                     color: scheme.onSurface,
                   ),
                 ),
-                Icon(
-                  Icons.chevron_right,
-                  color: scheme.onSurface.withValues(alpha: 0.4),
+                IconButton(
+                  onPressed: () => _changeMonth(1),
+                  icon: Icon(
+                    Icons.chevron_right,
+                    color: scheme.onSurface.withValues(alpha: 0.4),
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: List.generate(_days.length, (i) {
-                final selected = _selectedDayIndex == i;
+              children: _weekDays.map((date) {
+                final selected = DateUtils.isSameDay(date, _selectedDate);
+                final isPast = date.isBefore(
+                  DateTime.now().subtract(const Duration(days: 1)),
+                );
+
                 return GestureDetector(
-                  onTap: () => setState(() => _selectedDayIndex = i),
+                  onTap: isPast
+                      ? null
+                      : () => setState(() {
+                          _selectedDate = date;
+                          _selectedTime = null;
+                        }),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
@@ -86,7 +117,7 @@ class _DateSelectionScreenState extends State<DateSelectionScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: selected
-                          ? scheme.secondary
+                          ? scheme.primary
                           : scheme.surfaceContainer,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
@@ -95,34 +126,37 @@ class _DateSelectionScreenState extends State<DateSelectionScreen> {
                             : scheme.onSurface.withValues(alpha: 0.12),
                       ),
                     ),
-                    child: Column(
-                      children: [
-                        Text(
-                          _days[i]['day']!,
-                          style: TextStyle(
-                            color: selected
-                                ? scheme.onSecondary
-                                : scheme.onSurface.withValues(alpha: 0.5),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
+                    child: Opacity(
+                      opacity: isPast ? 0.35 : 1.0,
+                      child: Column(
+                        children: [
+                          Text(
+                            DateFormat('EEE').format(date).toUpperCase(),
+                            style: TextStyle(
+                              color: selected
+                                  ? scheme.onPrimary
+                                  : scheme.onSurface.withValues(alpha: 0.5),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _days[i]['date']!,
-                          style: TextStyle(
-                            color: selected
-                                ? scheme.onSecondary
-                                : scheme.onSurface,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                          const SizedBox(height: 2),
+                          Text(
+                            date.day.toString(),
+                            style: TextStyle(
+                              color: selected
+                                  ? scheme.onPrimary
+                                  : scheme.onSurface,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 );
-              }),
+              }).toList(),
             ),
             const SizedBox(height: 4),
             Divider(color: scheme.onSurface.withValues(alpha: 0.1)),
@@ -151,12 +185,12 @@ class _DateSelectionScreenState extends State<DateSelectionScreen> {
                   child: Container(
                     decoration: BoxDecoration(
                       color: selected
-                          ? scheme.secondary.withValues(alpha: 0.15)
+                          ? scheme.primary.withValues(alpha: 0.15)
                           : scheme.surfaceContainer,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: selected
-                            ? scheme.secondary
+                            ? scheme.primary
                             : scheme.onSurface.withValues(alpha: 0.12),
                       ),
                     ),
@@ -164,7 +198,7 @@ class _DateSelectionScreenState extends State<DateSelectionScreen> {
                       child: Text(
                         t,
                         style: TextStyle(
-                          color: selected ? scheme.secondary : scheme.onSurface,
+                          color: selected ? scheme.primary : scheme.onSurface,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -178,16 +212,15 @@ class _DateSelectionScreenState extends State<DateSelectionScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _selectedTime != null
-                    ? () => Navigator.push(
-                        context,
+                    ? () => Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => const DoctorDetailsScreen(),
+                          builder: (context) => DoctorDetailsScreen(),
                         ),
                       )
                     : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: scheme.secondary,
-                  foregroundColor: scheme.onSecondary,
+                  backgroundColor: scheme.primary,
+                  foregroundColor: scheme.onPrimary,
                   disabledBackgroundColor: scheme.onSurface.withValues(
                     alpha: 0.12,
                   ),

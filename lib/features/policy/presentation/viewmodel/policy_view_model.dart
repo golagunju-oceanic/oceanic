@@ -5,7 +5,6 @@ import 'package:oceanic/features/policy/domain/usecase/get_policy_usecase.dart';
 import 'package:oceanic/features/policy/domain/usecase/get_utilization_usecase.dart';
 import 'package:oceanic/features/policy/presentation/provider/policy_provider.dart';
 
-import '../../../../core/network/network_exception.dart';
 import '../state/policy_state.dart';
 
 class PolicyViewModel extends Notifier<PolicyState> {

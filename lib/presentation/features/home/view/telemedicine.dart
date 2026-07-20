@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:oceanic/features/Telemedicine/presentation/widgets/telemedicine_alert_dialog.dart';
 import 'package:oceanic/presentation/features/home/view/doctor_selection_screen.dart';
 
 class TelemedicineConsentScreen extends StatefulWidget {
@@ -11,6 +12,19 @@ class TelemedicineConsentScreen extends StatefulWidget {
 
 class _TelemedicineConsentScreenState extends State<TelemedicineConsentScreen> {
   bool _agreed = true;
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final agreed = await TelemedicineAlertDialog()
+          .showTelemedicineConsentDialog(context);
+
+      if (!agreed && mounted) {
+        Navigator.pop(context);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

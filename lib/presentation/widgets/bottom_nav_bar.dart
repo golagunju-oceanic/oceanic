@@ -18,9 +18,12 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: const [HomeScreen(), ReimbursementScreen(), ProfileScreen()],
+
+      body: SafeArea(
+        child: IndexedStack(
+          index: _selectedIndex,
+          children: const [HomeScreen(), ReimbursementScreen(), ProfileScreen()],
+        ),
       ),
       bottomNavigationBar: CurvedNavigationBar(
         index: _selectedIndex,

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-class OctodocScaffold extends StatelessWidget {
+class TelemedicineScaffold extends StatelessWidget {
   final Widget child;
   final int currentStep;
 
-  const OctodocScaffold({
+  const TelemedicineScaffold({
     required this.child,
     required this.currentStep,
     super.key,
@@ -18,52 +18,36 @@ class OctodocScaffold extends StatelessWidget {
       backgroundColor: scheme.surface,
       body: Column(
         children: [
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: ElevatedButton(
-                  onPressed: () =>
-                      Navigator.of(context).popUntil((r) => r.isFirst),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: scheme.primary,
-                    foregroundColor: scheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Back to App',
-                    style: TextStyle(fontSize: 13),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.healing, color: Colors.red, size: 16),
-                const SizedBox(width: 4),
-                Text(
-                  'Powered by Octodoc',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: scheme.onSurface.withValues(alpha: 0.5),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          SizedBox(height: 50),
+          // SafeArea(
+          //   bottom: false,
+          //   child: Padding(
+          //     padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          //     child: Align(
+          //       alignment: Alignment.centerLeft,
+          //       child: ElevatedButton(
+          //         onPressed: () =>
+          //             Navigator.of(context).popUntil((r) => r.isFirst),
+          //         style: ElevatedButton.styleFrom(
+          //           backgroundColor: scheme.primary,
+          //           foregroundColor: scheme.onPrimary,
+          //           padding: const EdgeInsets.symmetric(
+          //             horizontal: 20,
+          //             vertical: 10,
+          //           ),
+          //           shape: RoundedRectangleBorder(
+          //             borderRadius: BorderRadius.circular(24),
+          //           ),
+          //           elevation: 0,
+          //         ),
+          //         child: const Text(
+          //           'Back to App',
+          //           style: TextStyle(fontSize: 13),
+          //         ),
+          //       ),
+          //     ),
+          //   ),
+          // ),
           Divider(height: 1, color: scheme.onSurface.withValues(alpha: 0.1)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -88,7 +72,7 @@ class OctodocScaffold extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: i + 1 == currentStep
-                            ? scheme.secondary
+                            ? scheme.primary
                             : scheme.onSurface.withValues(alpha: 0.15),
                       ),
                     ),

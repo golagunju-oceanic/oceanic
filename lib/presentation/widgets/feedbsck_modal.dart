@@ -80,7 +80,7 @@ class _HmoFeedbackModalState extends State<HmoFeedbackModal> {
                 "How satisfied are you with how the facility attended to your needs today?",
                 style: GoogleFonts.lato(
                   fontSize: 14,
-                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -141,14 +141,14 @@ class _HmoFeedbackModalState extends State<HmoFeedbackModal> {
                       "Very unsatisfied",
                       style: GoogleFonts.lato(
                         fontSize: 11,
-                        color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                     ),
                     Text(
                       "Very satisfied",
                       style: GoogleFonts.lato(
                         fontSize: 11,
-                        color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                     ),
                   ],
@@ -203,7 +203,7 @@ class _HmoFeedbackModalState extends State<HmoFeedbackModal> {
                 decoration: InputDecoration(
                   hintText: "Add details about the hospital care or reimbursement...",
                   hintStyle: GoogleFonts.lato(
-                    color: theme.colorScheme.onSurface.withOpacity(0.4),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                   ),
                   contentPadding: const EdgeInsets.all(12),
                   border: OutlineInputBorder(
@@ -235,7 +235,7 @@ class _HmoFeedbackModalState extends State<HmoFeedbackModal> {
                         "Skip",
                         style: GoogleFonts.lato(
                           fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                       ),
                     ),

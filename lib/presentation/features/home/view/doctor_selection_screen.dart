@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:oceanic/presentation/features/home/view/date_selction_screen.dart';
-import 'package:oceanic/presentation/widgets/octodoc_scaffold.dart';
+import 'package:oceanic/presentation/widgets/telemedicine_scaffold.dart';
 
 class DoctorSelectionScreen extends StatelessWidget {
   const DoctorSelectionScreen({super.key});
@@ -33,7 +33,7 @@ class DoctorSelectionScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    return OctodocScaffold(
+    return TelemedicineScaffold(
       currentStep: 1,
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -147,7 +147,7 @@ class _DoctorCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(Icons.favorite, color: scheme.secondary, size: 22),
+                Icon(Icons.favorite, color: scheme.primary, size: 22),
               ],
             ),
             const SizedBox(height: 8),

@@ -1,27 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:oceanic/features/health_provider/presentation/provider/provider_provider.dart';
+import 'package:oceanic/features/health_provider/presentation/state/provider_state.dart';
 
-class HealthProvider extends StatefulWidget {
+class HealthProvider extends ConsumerStatefulWidget {
   const HealthProvider({super.key});
 
   @override
-  State<HealthProvider> createState() => _HealthProviderState();
+  ConsumerState<HealthProvider> createState() => _HealthProviderState();
 }
 
-class _HealthProviderState extends State<HealthProvider> {
+class _HealthProviderState extends ConsumerState<HealthProvider> {
   final _searchController = TextEditingController();
   bool _showOutsideNetwork = false;
-  String _searchQuery = '';
-
-  final List<Map<String, String>> _allProviders = [];
-
-  List<Map<String, String>> get _filteredProviders {
-    if (_searchQuery.isEmpty) return _allProviders;
-    return _allProviders
-        .where(
-          (p) => p['name']!.toLowerCase().contains(_searchQuery.toLowerCase()),
-        )
-        .toList();
-  }
+  // String _searchQuery = '';
 
   @override
   void dispose() {
@@ -29,7 +21,9 @@ class _HealthProviderState extends State<HealthProvider> {
     super.dispose();
   }
 
-  void _onSearchChanged(String value) => setState(() => _searchQuery = value);
+  void _onSearchChanged(String value) {
+    ref.read(providerNotifierProvider.notifier).search(value);
+  }
 
   void _openFilter() {
     final scheme = Theme.of(context).colorScheme;
@@ -82,10 +76,15 @@ class _HealthProviderState extends State<HealthProvider> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-
+    final state = ref.watch(providerNotifierProvider);
+    final viewModel = ref.read(providerNotifierProvider.notifier);
+    // print("UI Providers: ${state.filteredProviders.length}");
     return Scaffold(
       backgroundColor: scheme.surface,
-      appBar: AppBar(title: const Text('Network Provider'), centerTitle: true),
+      appBar: AppBar(
+        title: const Text('Health Care Provider'),
+        centerTitle: true,
+      ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
@@ -93,7 +92,7 @@ class _HealthProviderState extends State<HealthProvider> {
           children: [
             const SizedBox(height: 16),
             Text(
-              'Network Provider',
+              'Health Care Provider',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
@@ -105,7 +104,12 @@ class _HealthProviderState extends State<HealthProvider> {
             const SizedBox(height: 20),
             _buildToggleRow(scheme),
             const SizedBox(height: 24),
-            Expanded(child: _buildProviderList(scheme)),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: viewModel.refresh,
+                child: _buildProviderList(scheme, state),
+              ),
+            ),
           ],
         ),
       ),
@@ -115,7 +119,7 @@ class _HealthProviderState extends State<HealthProvider> {
   Widget _buildSearchBar(ColorScheme scheme) {
     return TextField(
       controller: _searchController,
-      onChanged: _onSearchChanged,
+      onChanged: (value) => _onSearchChanged(value),
       style: TextStyle(color: scheme.onSurface),
       decoration: InputDecoration(
         hintText: 'Search',
@@ -164,7 +168,7 @@ class _HealthProviderState extends State<HealthProvider> {
         Switch(
           value: _showOutsideNetwork,
           onChanged: (v) => setState(() => _showOutsideNetwork = v),
-          activeColor: scheme.primary,
+          activeThumbColor: scheme.primary,
           trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
         ),
         const SizedBox(width: 8),
@@ -179,51 +183,65 @@ class _HealthProviderState extends State<HealthProvider> {
     );
   }
 
-  Widget _buildProviderList(ColorScheme scheme) {
-    if (_filteredProviders.isEmpty) {
+  Widget _buildProviderList(ColorScheme scheme, ProviderState state) {
+    if (state.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (state.filteredProviders.isEmpty) {
       return Center(
         child: Text(
-          'No Available Providers',
+          "No providers found",
           style: TextStyle(
             fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: scheme.onSurface.withValues(alpha: 0.6),
+            color: scheme.onSurface.withValues(alpha: .6),
           ),
         ),
       );
     }
 
     return ListView.separated(
-      itemCount: _filteredProviders.length,
-      separatorBuilder: (_, __) =>
-          Divider(height: 1, color: scheme.onSurface.withValues(alpha: 0.08)),
+      physics: const AlwaysScrollableScrollPhysics(),
+      itemCount: state.filteredProviders.length,
+      separatorBuilder: (_, _) =>
+          Divider(height: 1, color: scheme.onSurface.withValues(alpha: .08)),
       itemBuilder: (context, index) {
-        final provider = _filteredProviders[index];
+        final provider = state.filteredProviders[index];
+
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(vertical: 8),
+
           leading: CircleAvatar(
-            backgroundColor: scheme.primary.withValues(alpha: 0.1),
+            backgroundColor: scheme.primary.withValues(alpha: .1),
             child: Icon(Icons.local_hospital_outlined, color: scheme.primary),
           ),
+
           title: Text(
-            provider['name'] ?? '',
+            provider.name,
             style: TextStyle(
               fontWeight: FontWeight.w600,
-              fontSize: 15,
               color: scheme.onSurface,
             ),
           ),
-          subtitle: Text(
-            provider['address'] ?? '',
-            style: TextStyle(
-              color: scheme.onSurface.withValues(alpha: 0.5),
-              fontSize: 13,
-            ),
+
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (provider.address != null) Text(provider.address!),
+
+              if (provider.city != null)
+                Text(
+                  provider.city!,
+                  style: TextStyle(
+                    color: scheme.onSurface.withValues(alpha: .6),
+                    fontSize: 12,
+                  ),
+                ),
+            ],
           ),
-          trailing: Icon(
-            Icons.chevron_right,
-            color: scheme.onSurface.withValues(alpha: 0.4),
-          ),
+
+          trailing: const Icon(Icons.chevron_right),
+
           onTap: () {},
         );
       },
