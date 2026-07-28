@@ -5,6 +5,7 @@ import 'package:oceanic/features/auth/presentations/provider/auth_provider.dart'
 import 'package:oceanic/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:oceanic/presentation/features/home/view/authorization_screen.dart';
 import 'package:oceanic/features/health_provider/presentation/views/health_provider.dart';
+import 'package:oceanic/presentation/features/home/view/doctor_selection_screen.dart';
 import 'package:oceanic/presentation/features/home/view/health_record.dart';
 import 'package:oceanic/presentation/features/home/view/medical_request.dart';
 import 'package:oceanic/features/policy/presentation/view/policy_details.dart';
@@ -98,7 +99,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       'title': 'Telemedicine',
       'subtitle': 'Virtual consultation with a Doctor',
       'color': Color(0xFF42A5F5),
-      'route': const TelemedicineConsentScreen(),
+      'route': const DoctorSelectionScreen(),
     },
     {
       'icon': Icons.medication_outlined,
@@ -392,4 +393,3 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 }
-

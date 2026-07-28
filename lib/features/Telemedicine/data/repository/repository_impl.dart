@@ -11,6 +11,7 @@ class TelemedicineRepositoryImpl implements TelemedicineRepository {
   @override
   Future<AgoraTokenResponse> generateToken({
     required String channel,
+    required int uid,
     String role = 'publisher',
    
   }) {
@@ -18,6 +19,7 @@ class TelemedicineRepositoryImpl implements TelemedicineRepository {
       GenerateTokenRequest(
         channel: channel,
         role: role,
+        uid: uid
        
       ),
     );

@@ -4,5 +4,6 @@ abstract class TelemedicineRepository {
   Future<AgoraTokenResponse> generateToken({
     required String channel,
     String role,
+    required int uid,
   });
 }

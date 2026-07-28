@@ -9,7 +9,6 @@ class ReimbursementScreen extends StatefulWidget {
   @override
   State<ReimbursementScreen> createState() => _ReimbursementScreenState();
 }
-
 class _Step {
   static const confirm = 0;
   static const paCode = 1;
@@ -78,10 +77,6 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     super.dispose();
   }
 
-  // ---------------------------------------------------------------------
-  // Navigation
-  // ---------------------------------------------------------------------
-
   void _goToPage(int step) {
     setState(() => _currentStep = step);
     _pageController.animateToPage(
@@ -105,7 +100,6 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
 
   void _back() {
     if (_currentStep == _Step.paCode) {
-      // Leaving the flow entirely from the first real step.
       Navigator.of(context).maybePop();
       return;
     }
@@ -113,10 +107,6 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
       _goToPage(_currentStep - 1);
     }
   }
-
-  // ---------------------------------------------------------------------
-  // Actions
-  // ---------------------------------------------------------------------
 
   Future<void> _selectDate(
     BuildContext context,

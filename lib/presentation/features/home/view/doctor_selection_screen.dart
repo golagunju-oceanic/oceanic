@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:oceanic/features/Telemedicine/presentation/widgets/telemedicine_alert_dialog.dart';
 import 'package:oceanic/presentation/features/home/view/date_selction_screen.dart';
 import 'package:oceanic/presentation/widgets/telemedicine_scaffold.dart';
 
-class DoctorSelectionScreen extends StatelessWidget {
+class DoctorSelectionScreen extends StatefulWidget {
   const DoctorSelectionScreen({super.key});
 
   static const List<Map<String, dynamic>> _doctors = [
@@ -30,6 +31,27 @@ class DoctorSelectionScreen extends StatelessWidget {
   ];
 
   @override
+  State<DoctorSelectionScreen> createState() => _DoctorSelectionScreenState();
+}
+
+class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
+
+
+   @override
+  void initState() {
+   
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final agreed = await TelemedicineAlertDialog()
+          .showTelemedicineConsentDialog(context);
+
+      if (!agreed && mounted) {
+        Navigator.pop(context);
+      }
+    });
+  }
+  @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
@@ -50,7 +72,7 @@ class DoctorSelectionScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            ..._doctors.map(
+            ...DoctorSelectionScreen._doctors.map(
               (doc) => _DoctorCard(
                 doctor: doc,
                 onTap: () => Navigator.push(

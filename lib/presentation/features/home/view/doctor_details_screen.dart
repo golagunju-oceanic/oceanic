@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:oceanic/features/Telemedicine/presentation/view/audio_consultation_screen.dart';
 import 'package:oceanic/features/Telemedicine/presentation/view/chat_consultation_screen.dart';
 import 'package:oceanic/features/Telemedicine/presentation/view/video_consultation_screen.dart';
+import 'package:oceanic/features/Telemedicine/presentation/widgets/telemedicine_alert_dialog.dart';
 import 'package:oceanic/presentation/widgets/telemedicine_scaffold.dart';
 
 class DoctorDetailsScreen extends StatefulWidget {

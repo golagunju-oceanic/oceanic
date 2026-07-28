@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,29 +19,34 @@ class VideoConsultationScreen extends ConsumerStatefulWidget {
 
 class _VideoConsultationScreenState
     extends ConsumerState<VideoConsultationScreen> {
+  late final TelemedicineViewModel _viewModel;
+
   @override
   void initState() {
     super.initState();
 
-    Future.microtask(() {
-      debugPrint("Channel: '${widget.channelName}'");
+    _viewModel = ref.read(telemedicineProvider.notifier);
 
-      ref
-          .read(telemedicineProvider.notifier)
-          .joinConsultation(channel: widget.channelName, uid: 1);
+    Future.microtask(() {
+      debugPrint("Channel: ${widget.channelName}");
+
+      _viewModel.joinConsultation(
+        channel: widget.channelName,
+        uid: Random().nextInt(1000) * 1,
+      );
     });
   }
 
   @override
   void dispose() {
-    ref.read(telemedicineProvider.notifier).leaveConsultation();
+    _viewModel.leaveConsultation();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(telemedicineProvider);
-    final vm = ref.read(telemedicineProvider.notifier);
+    final vm = _viewModel;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -108,7 +115,7 @@ class _VideoConsultationScreenState
         height: 180,
         child: AgoraVideoView(
           controller: VideoViewController(
-            rtcEngine: vm.engine,
+            rtcEngine: vm.engine!,
             canvas: const VideoCanvas(uid: 0),
           ),
         ),
@@ -132,12 +139,8 @@ class _VideoConsultationScreenState
         _circleButton(
           color: Colors.red,
           icon: Icons.call_end,
-          onTap: () async {
-            await vm.leaveConsultation();
-
-            if (mounted) {
-              Navigator.pop(context);
-            }
+          onTap: () {
+            Navigator.pop(context);
           },
         ),
       ],

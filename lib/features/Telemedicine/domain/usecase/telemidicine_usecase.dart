@@ -8,13 +8,9 @@ class GenerateTokenUseCase {
 
   Future<AgoraTokenResponse> call({
     required String channel,
+    required int uid,
     String role = 'publisher',
-    
   }) {
-    return repository.generateToken(
-      channel: channel,
-      role: role,
-      
-    );
+    return repository.generateToken(channel: channel, role: role, uid: uid);
   }
 }
