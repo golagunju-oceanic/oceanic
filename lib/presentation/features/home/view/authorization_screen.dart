@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:oceanic/features/dashboard/data/models/recent_authorization.dart';
 import 'package:oceanic/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:oceanic/presentation/widgets/drawer.dart';
+import 'package:oceanic/presentation/widgets/floating_app_bar.dart';
 
 class AuthorizationScreen extends ConsumerStatefulWidget {
   const AuthorizationScreen({super.key});
@@ -14,6 +15,7 @@ class AuthorizationScreen extends ConsumerStatefulWidget {
 
 class _AuthorizationScreenState extends ConsumerState<AuthorizationScreen> {
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   DateTimeRange? _selectedDateRange;
 
@@ -47,192 +49,222 @@ class _AuthorizationScreenState extends ConsumerState<AuthorizationScreen> {
     final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      endDrawer: CustomDrawer(),
-      appBar: AppBar(title: const Text('Authorization')),
-      body: Column(
-        children: [
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
-            child: Row(
+      key: _scaffoldKey,
+      drawer: const CustomDrawer(),
+      // appBar: AppBar(title: const Text('Authorization')),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Column(
               children: [
-                GestureDetector(
-                  onTap: _pickDateRange,
-                  child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 12.w,
-                      vertical: 8.h,
-                    ),
-                    width: 180.w,
-                    decoration: BoxDecoration(
-                      color: scheme.surfaceContainer,
-                      borderRadius: BorderRadius.circular(6.r),
-                      border: Border.all(
-                        color: scheme.onSurface.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.calendar_today,
-                          size: 18.r,
-                          color: scheme.onSurface.withValues(alpha: 0.6),
-                        ),
-                        SizedBox(width: 8.w),
-                        Expanded(
-                          child: Text(
-                            _selectedDateRange == null
-                                ? 'Select dates'
-                                : '${_formatDate(_selectedDateRange!.start)} - ${_formatDate(_selectedDateRange!.end)}',
-                            style: TextStyle(
-                              fontSize: 11.sp,
-                              color: scheme.onSurface,
+                Padding(
+                  padding: EdgeInsets.only(left: 20.w, right: 20.w, top: 80.h),
+                  child: Row(
+                    children: [
+                      GestureDetector(
+                        onTap: _pickDateRange,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12.w,
+                            vertical: 8.h,
+                          ),
+                          width: 180.w,
+                          decoration: BoxDecoration(
+                            color: scheme.surfaceContainer,
+                            borderRadius: BorderRadius.circular(6.r),
+                            border: Border.all(
+                              color: scheme.onSurface.withValues(alpha: 0.2),
                             ),
-                            overflow: TextOverflow.ellipsis,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today,
+                                size: 18.r,
+                                color: scheme.onSurface.withValues(alpha: 0.6),
+                              ),
+                              SizedBox(width: 8.w),
+                              Expanded(
+                                child: Text(
+                                  _selectedDateRange == null
+                                      ? 'Select dates'
+                                      : '${_formatDate(_selectedDateRange!.start)} - ${_formatDate(_selectedDateRange!.end)}',
+                                  style: TextStyle(
+                                    fontSize: 11.sp,
+                                    color: scheme.onSurface,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      SizedBox(width: 16.w),
+                      ElevatedButton(
+                        onPressed: () {},
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: scheme.primary,
+                          foregroundColor: scheme.onPrimary,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 20.w,
+                            vertical: 5.h,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.r),
+                          ),
+                        ),
+                        child: Text(
+                          'Search',
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                SizedBox(width: 16.w),
-                ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: scheme.primary,
-                    foregroundColor: scheme.onPrimary,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 20.w,
-                      vertical: 5.h,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10.r),
-                    ),
-                  ),
-                  child: Text(
-                    'Search',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w600,
-                    ),
+                Expanded(
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      final dashboard = ref.watch(dashboardProvider);
+
+                      return dashboard.when(
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
+                        error: (error, _) =>
+                            Center(child: Text(error.toString())),
+                        data: (data) {
+                          final authorizations = data.recentAuthorizations;
+
+                          if (authorizations.isEmpty) {
+                            return Center(
+                              child: Column(
+                                children: [
+                                  Consumer(
+                                    builder: (context, ref, child) {
+                                      final dashboard = ref.watch(
+                                        dashboardProvider,
+                                      );
+
+                                      return dashboard.when(
+                                        loading: () => const SizedBox(),
+                                        error: (error, stackTrace) {
+                                          debugPrint(error.toString());
+                                          debugPrint(stackTrace.toString());
+
+                                          return Center(
+                                            child: Text(error.toString()),
+                                          );
+                                        },
+                                        data: (data) {
+                                          return Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 10,
+                                            ),
+                                            child: Container(
+                                              padding: const EdgeInsets.all(18),
+                                              decoration: BoxDecoration(
+                                                color: scheme.primary,
+                                                borderRadius:
+                                                    BorderRadius.circular(18),
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    data.member.fullName,
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 18,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    "Member ID: ${data.member.memberId}",
+                                                    style: const TextStyle(
+                                                      color: Colors.white70,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 20),
+                                                  Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .spaceAround,
+                                                    children: [
+                                                      _buildStat(
+                                                        "Pending",
+                                                        data
+                                                            .authorizations
+                                                            .pending,
+                                                        Colors.orange,
+                                                      ),
+                                                      _buildStat(
+                                                        "Approved",
+                                                        data
+                                                            .authorizations
+                                                            .approved,
+                                                        Colors.green,
+                                                      ),
+                                                      _buildStat(
+                                                        "Rejected",
+                                                        data
+                                                            .authorizations
+                                                            .rejected,
+                                                        Colors.red,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
+
+                                  const Center(
+                                    child: Text("No authorizations found"),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+
+                          return RefreshIndicator(
+                            onRefresh: () => ref
+                                .read(dashboardProvider.notifier)
+                                .refreshDashboard(),
+                            child: ListView.builder(
+                              controller: _scrollController,
+                              itemCount: authorizations.length,
+                              itemBuilder: (context, index) {
+                                final auth = authorizations[index];
+
+                                return _buildCard(auth, scheme);
+                              },
+                            ),
+                          );
+                        },
+                      );
+                    },
                   ),
                 ),
               ],
             ),
-          ),
-          Expanded(
-            child: Consumer(
-              builder: (context, ref, child) {
-                final dashboard = ref.watch(dashboardProvider);
-
-                return dashboard.when(
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (error, _) => Center(child: Text(error.toString())),
-                  data: (data) {
-                    final authorizations = data.recentAuthorizations;
-
-                    if (authorizations.isEmpty) {
-                      return Column(
-                        children: [
-                          Consumer(
-                            builder: (context, ref, child) {
-                              final dashboard = ref.watch(dashboardProvider);
-
-                              return dashboard.when(
-                                loading: () => const SizedBox(),
-                                error: (error, stackTrace) {
-                                  debugPrint(error.toString());
-                                  debugPrint(stackTrace.toString());
-
-                                  return Center(child: Text(error.toString()));
-                                },
-                                data: (data) {
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 10,
-                                    ),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(18),
-                                      decoration: BoxDecoration(
-                                        color: scheme.primary,
-                                        borderRadius: BorderRadius.circular(18),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            data.member.fullName,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            "Member ID: ${data.member.memberId}",
-                                            style: const TextStyle(
-                                              color: Colors.white70,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 20),
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceAround,
-                                            children: [
-                                              _buildStat(
-                                                "Pending",
-                                                data.authorizations.pending,
-                                                Colors.orange,
-                                              ),
-                                              _buildStat(
-                                                "Approved",
-                                                data.authorizations.approved,
-                                                Colors.green,
-                                              ),
-                                              _buildStat(
-                                                "Rejected",
-                                                data.authorizations.rejected,
-                                                Colors.red,
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          ),
-
-                          const Center(child: Text("No authorizations found")),
-                        ],
-                      );
-                    }
-
-                    return RefreshIndicator(
-                      onRefresh: () => ref
-                          .read(dashboardProvider.notifier)
-                          .refreshDashboard(),
-                      child: ListView.builder(
-                        controller: _scrollController,
-                        itemCount: authorizations.length,
-                        itemBuilder: (context, index) {
-                          final auth = authorizations[index];
-
-                          return _buildCard(auth, scheme);
-                        },
-                      ),
-                    );
-                  },
-                );
-              },
+            FloatingAppBar(
+              scrollController: _scrollController,
+              onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
+              text: "Authorizations",
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

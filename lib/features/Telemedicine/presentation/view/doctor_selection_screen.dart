@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:oceanic/features/Telemedicine/presentation/widgets/telemedicine_alert_dialog.dart';
-import 'package:oceanic/presentation/features/home/view/date_selction_screen.dart';
+import 'package:oceanic/features/Telemedicine/presentation/view/date_selction_screen.dart';
 import 'package:oceanic/presentation/widgets/telemedicine_scaffold.dart';
 
 class DoctorSelectionScreen extends StatefulWidget {

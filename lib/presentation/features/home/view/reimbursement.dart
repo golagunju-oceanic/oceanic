@@ -9,17 +9,13 @@ class ReimbursementScreen extends StatefulWidget {
   @override
   State<ReimbursementScreen> createState() => _ReimbursementScreenState();
 }
-class _Step {
-  static const confirm = 0;
-  static const paCode = 1;
-  static const providerClaim = 2;
-  // static const documents = 3;
-  static const summary = 4;
-}
 
 class _ReimbursementScreenState extends State<ReimbursementScreen> {
   final _paFormKey = GlobalKey<FormState>();
   final _providerFormKey = GlobalKey<FormState>();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final ScrollController _scrollController = ScrollController();
+  final PageController _pageController = PageController();
 
   final _providerNameController = TextEditingController();
   final _claimAmountController = TextEditingController();
@@ -28,6 +24,9 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
   final _callCenterAgentController = TextEditingController();
   final _commentController = TextEditingController();
 
+  int _currentStep =
+      0; // 0: Notice/Intro, 1: PA Code, 2: Provider Details, 3: Documents, 4: Review
+
   String? _selectedClaimType;
   String? _selectedState;
   String? _selectedCity;
@@ -35,9 +34,6 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
 
   final List<String> _uploadedFiles = [];
   final int _maxFiles = 5;
-
-  int _currentStep = _Step.confirm;
-  final PageController _pageController = PageController();
 
   final List<String> _claimTypes = [
     'Outpatient',
@@ -87,23 +83,21 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
   }
 
   void _next() {
-    // Validate the current step before advancing.
-    if (_currentStep == _Step.paCode) {
+    if (_currentStep == 1) {
       if (!_paFormKey.currentState!.validate()) return;
-    } else if (_currentStep == _Step.providerClaim) {
+    } else if (_currentStep == 2) {
       if (!_providerFormKey.currentState!.validate()) return;
     }
-    if (_currentStep < _Step.summary) {
+
+    if (_currentStep < 4) {
       _goToPage(_currentStep + 1);
     }
   }
 
   void _back() {
-    if (_currentStep == _Step.paCode) {
+    if (_currentStep == 0) {
       Navigator.of(context).maybePop();
-      return;
-    }
-    if (_currentStep > _Step.confirm) {
+    } else {
       _goToPage(_currentStep - 1);
     }
   }
@@ -154,19 +148,23 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Submit reimbursement request?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Submit Reimbursement?'),
         content: const Text(
-          'Once submitted, you cannot edit this claim. Confirm the details are correct.',
+          'Once submitted, this claim cannot be edited. Please confirm your details are accurate.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Review again'),
+            child: const Text('Review Again'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: scheme.primary,
               foregroundColor: scheme.onPrimary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Confirm & Submit'),
@@ -191,43 +189,53 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     showHmoFeedbackModal(context);
   }
 
-  final ScrollController _scrollController = ScrollController();
-
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
+      key: _scaffoldKey,
       drawer: const CustomDrawer(),
       backgroundColor: scheme.surface,
       body: SafeArea(
         child: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 70),
-              child: Column(
-                children: [
-                  if (_currentStep != _Step.confirm) _buildProgressBar(scheme),
-                  Expanded(
-                    child: PageView(
-                      controller: _pageController,
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: [
-                        _buildConfirmStep(scheme),
-                        _buildPaCodeStep(scheme),
-                        _buildProviderClaimStep(scheme),
-                        _buildDocumentsStep(scheme),
-                        _buildSummaryStep(scheme),
-                      ],
-                    ),
+            Column(
+              children: [
+                const SizedBox(height: 84), // Top Spacing for FloatingAppBar
+                // Step Progress Indicator (Hidden on Intro Step 0)
+                if (_currentStep > 0) _buildProgressBar(scheme),
+
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [
+                      _buildNoticeStep(
+                        scheme,
+                      ), // Step 0: Notice & PA Code Requirement
+                      _buildPaCodeStep(scheme), // Step 1: PA Code Form
+                      _buildProviderClaimStep(
+                        scheme,
+                      ), // Step 2: Provider & Claim Details
+                      _buildDocumentsStep(
+                        scheme,
+                      ), // Step 3: Supporting Documents
+                      _buildSummaryStep(scheme), // Step 4: Summary Review
+                    ],
                   ),
-                  if (_currentStep != _Step.confirm) _buildBottomNav(scheme),
-                ],
-              ),
+                ),
+
+                // Bottom Navigation Bar
+                _buildBottomNav(scheme),
+              ],
             ),
+
+            // Floating Header Bar
             FloatingAppBar(
               scrollController: _scrollController,
-              username: 'User',
+              text: 'Request Reimbursement',
+              onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
             ),
           ],
         ),
@@ -235,65 +243,157 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     );
   }
 
-  Widget _buildConfirmStep(ColorScheme scheme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+  // --- STEP 0: PREREQUISITE NOTICE SCREEN ---
+  Widget _buildNoticeStep(ColorScheme scheme) {
+    return SingleChildScrollView(
+      controller: _scrollController,
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.receipt_long_outlined, size: 64, color: scheme.primary),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: scheme.primary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.support_agent_rounded,
+              size: 56,
+              color: scheme.primary,
+            ),
+          ),
           const SizedBox(height: 20),
           Text(
-            'Request a reimbursement?',
+            'Important Requirement',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 22,
               fontWeight: FontWeight.bold,
               color: scheme.onSurface,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Text(
-            'You will need your PA code, provider details, and receipts for this claim.',
+            'Please ensure you have obtained a Pre-Authorization (PA) Code from the Call Center before filling out this reimbursement form.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
-              color: scheme.onSurface.withValues(alpha: 0.6),
+              height: 1.5,
+              color: scheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
-          const SizedBox(height: 32),
-          SizedBox(
+          const SizedBox(height: 24),
+
+          // Call Center Quick Action Card
+          Container(
             width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              onPressed: () => _goToPage(_Step.paCode),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: scheme.primary,
-                foregroundColor: scheme.onPrimary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerLow ?? scheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: scheme.primary.withValues(alpha: 0.2)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.phone_in_talk_outlined,
+                      color: scheme.primary,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Don\'t have a PA Code yet?',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: scheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                elevation: 0,
-              ),
-              child: const Text(
-                'Yes, Start Request',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                const SizedBox(height: 8),
+                Text(
+                  'Call our 24/7 Call Center desk to request your Pre-Authorization code before proceeding.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onSurface.withValues(alpha: 0.6),
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {},
+                    icon: Icon(Icons.call, size: 18, color: scheme.primary),
+                    label: Text(
+                      'Call 02013300300',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: scheme.primary,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: scheme.primary),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Required Items Checklist
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'What you\'ll need for this claim:',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: scheme.onSurface,
               ),
             ),
           ),
           const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: OutlinedButton(
-              onPressed: () => Navigator.of(context).maybePop(),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: scheme.onSurface.withValues(alpha: 0.7),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+          _buildChecklistItem('Valid PA Code & Representative Name', scheme),
+          _buildChecklistItem('Reimbursement Reference Code', scheme),
+          _buildChecklistItem(
+            'Healthcare Provider Name & Claim Amount',
+            scheme,
+          ),
+          _buildChecklistItem(
+            'Receipts or Medical Prescriptions (Max 5MB)',
+            scheme,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChecklistItem(String text, ColorScheme scheme) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Icon(Icons.check_circle_rounded, color: scheme.primary, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 13,
+                color: scheme.onSurface.withValues(alpha: 0.75),
               ),
-              child: const Text('Not Now'),
             ),
           ),
         ],
@@ -301,9 +401,11 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     );
   }
 
+  // --- STEP 1: PA CODE & PRE-AUTH ---
   Widget _buildPaCodeStep(ColorScheme scheme) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      controller: _scrollController,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       child: Form(
         key: _paFormKey,
         child: Column(
@@ -311,7 +413,7 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
           children: [
             _buildSectionHeader(
               'Pre-Authorization & Codes',
-              Icons.vpn_key_outlined,
+              Icons.verified_user_outlined,
               scheme,
             ),
             _buildCardContainer(
@@ -321,8 +423,8 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
                 _buildTextField(
                   scheme: scheme,
                   controller: _paCodeController,
-                  hint: 'Enter PA Code',
-                  prefixIcon: Icons.verified_user_outlined,
+                  hint: 'e.g. PA-993821',
+                  prefixIcon: Icons.key_outlined,
                   validator: (v) =>
                       (v == null || v.isEmpty) ? 'Enter PA code' : null,
                 ),
@@ -331,7 +433,7 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
                 _buildTextField(
                   scheme: scheme,
                   controller: _callCenterAgentController,
-                  hint: 'Who issued this PA code?',
+                  hint: 'Enter representative name',
                   prefixIcon: Icons.support_agent_outlined,
                   validator: (v) => (v == null || v.isEmpty)
                       ? 'Enter representative name'
@@ -342,7 +444,7 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
                 _buildTextField(
                   scheme: scheme,
                   controller: _reimbursementCodeController,
-                  hint: 'Enter Reimbursement Code',
+                  hint: 'Enter reimbursement reference code',
                   prefixIcon: Icons.qr_code_scanner_outlined,
                   validator: (v) => (v == null || v.isEmpty)
                       ? 'Enter reimbursement code'
@@ -356,9 +458,11 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     );
   }
 
+  // --- STEP 2: PROVIDER & CLAIM DETAILS ---
   Widget _buildProviderClaimStep(ColorScheme scheme) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      controller: _scrollController,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       child: Form(
         key: _providerFormKey,
         child: Column(
@@ -405,17 +509,17 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
                 _buildTextField(
                   scheme: scheme,
                   controller: _providerNameController,
-                  hint: 'Enter hospital or provider name',
+                  hint: 'Enter hospital or clinic name',
                   prefixIcon: Icons.apartment_outlined,
                   validator: (v) =>
                       (v == null || v.isEmpty) ? 'Enter provider name' : null,
                 ),
                 const SizedBox(height: 16),
-                _buildLabel('Claimed Amount', scheme),
+                _buildLabel('Claimed Amount (₦)', scheme),
                 _buildTextField(
                   scheme: scheme,
                   controller: _claimAmountController,
-                  hint: 'Enter Claim Amount (₦)',
+                  hint: '0.00',
                   prefixIcon: Icons.payments_outlined,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
@@ -431,9 +535,11 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     );
   }
 
+  // --- STEP 3: DOCUMENTS & NOTES ---
   Widget _buildDocumentsStep(ColorScheme scheme) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      controller: _scrollController,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -448,7 +554,7 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildLabel('Upload Receipts / Prescription', scheme),
+                  _buildLabel('Upload Receipts / Prescriptions', scheme),
                   Text(
                     '${_uploadedFiles.length}/$_maxFiles',
                     style: TextStyle(
@@ -466,11 +572,11 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
                 _buildUploadedFilesList(scheme),
               ],
               const SizedBox(height: 16),
-              _buildLabel('Comments / Extra Information', scheme),
+              _buildLabel('Comments / Additional Notes', scheme),
               _buildTextField(
                 scheme: scheme,
                 controller: _commentController,
-                hint: 'Enter any supplementary context here...',
+                hint: 'Provide supplementary medical or payment context...',
                 prefixIcon: Icons.chat_bubble_outline_outlined,
                 maxLines: 4,
               ),
@@ -481,9 +587,11 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     );
   }
 
+  // --- STEP 4: REVIEW SUMMARY ---
   Widget _buildSummaryStep(ColorScheme scheme) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      controller: _scrollController,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -501,10 +609,11 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
                 scheme,
                 'Reimbursement Code',
                 _reimbursementCodeController.text,
+                isLast: true,
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           _buildCardContainer(
             scheme,
             children: [
@@ -520,7 +629,11 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
               ),
               _summaryRow(scheme, 'State', _selectedState ?? '-'),
               _summaryRow(scheme, 'City', _selectedCity ?? '-'),
-              _summaryRow(scheme, 'Provider', _providerNameController.text),
+              _summaryRow(
+                scheme,
+                'Provider Name',
+                _providerNameController.text,
+              ),
               _summaryRow(
                 scheme,
                 'Claimed Amount',
@@ -529,24 +642,26 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           _buildCardContainer(
             scheme,
             children: [
               _summaryRow(
                 scheme,
                 'Attachments',
-                '${_uploadedFiles.length} file(s)',
+                '${_uploadedFiles.length} file(s) attached',
               ),
               _summaryRow(
                 scheme,
                 'Comments',
-                _commentController.text.isEmpty ? '-' : _commentController.text,
+                _commentController.text.isEmpty
+                    ? 'None'
+                    : _commentController.text,
                 isLast: true,
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Row(
             children: [
               Icon(
@@ -557,7 +672,7 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  'Check every field above. Submitting locks this claim for review.',
+                  'Verify all fields before submitting. Claims cannot be edited after submission.',
                   style: TextStyle(
                     fontSize: 12,
                     color: scheme.onSurface.withValues(alpha: 0.5),
@@ -571,70 +686,56 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     );
   }
 
-  Widget _summaryRow(
-    ColorScheme scheme,
-    String label,
-    String value, {
-    bool isLast = false,
-  }) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: isLast ? 0 : 14),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 130,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                color: scheme.onSurface.withValues(alpha: 0.55),
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value.isEmpty ? '-' : value,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: scheme.onSurface,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
+  // --- PROGRESS BAR (Active from Step 1) ---
   Widget _buildProgressBar(ColorScheme scheme) {
-    final displayStep = _currentStep; // 1..4
+    final stepTitles = [
+      'PA & Codes',
+      'Claim Details',
+      'Documents',
+      'Review & Submit',
+    ];
+
+    final formStepIndex = _currentStep - 1; // 0..3
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Step $displayStep of 4',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: scheme.onSurface.withValues(alpha: 0.6),
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Step ${formStepIndex + 1} of 4',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: scheme.primary,
+                ),
+              ),
+              Text(
+                stepTitles[formStepIndex],
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: scheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 6),
           Row(
             children: List.generate(4, (i) {
-              final stepIndex = i + 1;
-              final isActive = stepIndex <= _currentStep;
+              final isActive = i <= formStepIndex;
               return Expanded(
-                child: Container(
-                  height: 4,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  height: 5,
                   margin: EdgeInsets.only(right: i == 3 ? 0 : 4),
                   decoration: BoxDecoration(
                     color: isActive
                         ? scheme.primary
-                        : scheme.onSurface.withValues(alpha: 0.1),
+                        : scheme.outlineVariant.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -646,8 +747,11 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     );
   }
 
+  // --- BOTTOM NAV BUTTONS ---
   Widget _buildBottomNav(ColorScheme scheme) {
-    final isSummary = _currentStep == _Step.summary;
+    final isIntro = _currentStep == 0;
+    final isSummary = _currentStep == 4;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       decoration: BoxDecoration(
@@ -660,16 +764,16 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
         children: [
           Expanded(
             child: SizedBox(
-              height: 52,
+              height: 50,
               child: OutlinedButton(
                 onPressed: _back,
                 style: OutlinedButton.styleFrom(
                   foregroundColor: scheme.onSurface.withValues(alpha: 0.7),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Text('Back'),
+                child: Text(isIntro ? 'Cancel' : 'Back'),
               ),
             ),
           ),
@@ -677,21 +781,23 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
           Expanded(
             flex: 2,
             child: SizedBox(
-              height: 52,
+              height: 50,
               child: ElevatedButton(
                 onPressed: isSummary ? _confirmAndSubmit : _next,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: scheme.primary,
                   foregroundColor: scheme.onPrimary,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   elevation: 0,
                 ),
                 child: Text(
-                  isSummary ? 'Submit Claim Request' : 'Next',
+                  isIntro
+                      ? 'I Have My PA Code'
+                      : (isSummary ? 'Submit Reimbursement' : 'Next Step'),
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 14.5,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -703,6 +809,7 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     );
   }
 
+  // --- REUSABLE UI HELPERS ---
   Widget _buildSectionHeader(String title, IconData icon, ColorScheme scheme) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 12),
@@ -730,16 +837,9 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
+        color: scheme.surfaceContainerLow ?? scheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -790,30 +890,22 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
           color: scheme.onSurface.withValues(alpha: 0.5),
         ),
         filled: true,
-        fillColor: scheme.surfaceContainerHigh,
+        fillColor: scheme.surfaceContainer,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 14,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: scheme.primary, width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: scheme.error, width: 1.2),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: scheme.error, width: 1.5),
         ),
       ),
     );
@@ -830,30 +922,18 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     return DropdownButtonFormField<String>(
       initialValue: value,
       validator: validator,
-      dropdownColor: scheme.surfaceContainerHigh,
+      dropdownColor: scheme.surface,
       style: TextStyle(color: scheme.onSurface, fontSize: 14),
       decoration: InputDecoration(
         filled: true,
-        fillColor: scheme.surfaceContainerHigh,
+        fillColor: scheme.surfaceContainer,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 14,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: scheme.primary, width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: scheme.error, width: 1.2),
         ),
       ),
       hint: Text(
@@ -879,13 +959,13 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     return DropdownButtonFormField<String>(
       initialValue: _selectedCity,
       validator: (v) => v == null ? 'Select a city' : null,
-      dropdownColor: scheme.surfaceContainerHigh,
+      dropdownColor: scheme.surface,
       style: TextStyle(color: scheme.onSurface, fontSize: 14),
       decoration: InputDecoration(
         filled: true,
         fillColor: isDisabled
             ? scheme.onSurface.withValues(alpha: 0.05)
-            : scheme.surfaceContainerHigh,
+            : scheme.surfaceContainer,
         prefixIcon: Icon(
           Icons.location_on_outlined,
           size: 20,
@@ -896,20 +976,8 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
           vertical: 14,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: scheme.primary, width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: scheme.error, width: 1.2),
         ),
       ),
       hint: Text(
@@ -948,8 +1016,8 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
                   vertical: 14,
                 ),
                 decoration: BoxDecoration(
-                  color: scheme.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(12),
+                  color: scheme.surfaceContainer,
+                  borderRadius: BorderRadius.circular(14),
                   border: hasError
                       ? Border.all(color: scheme.error, width: 1.2)
                       : null,
@@ -1008,39 +1076,37 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
       onTap: isMaxed ? null : _simulateFileUpload,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 22),
         decoration: BoxDecoration(
           color: isMaxed
               ? scheme.onSurface.withValues(alpha: 0.03)
-              : scheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(12),
+              : scheme.primary.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isMaxed
                 ? scheme.onSurface.withValues(alpha: 0.1)
-                : scheme.primary.withValues(alpha: 0.25),
-            style: BorderStyle.solid,
+                : scheme.primary.withValues(alpha: 0.3),
           ),
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.cloud_upload_outlined,
               color: isMaxed
                   ? scheme.onSurface.withValues(alpha: 0.3)
                   : scheme.primary,
-              size: 36,
+              size: 32,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
-              isMaxed ? 'Maximum file limit reached' : 'Tap to upload files',
+              isMaxed ? 'Maximum file limit reached' : 'Tap to upload receipts',
               style: TextStyle(
                 color: scheme.onSurface.withValues(alpha: 0.7),
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               'Supports PDF, JPG, PNG (Max 5MB per file)',
               style: TextStyle(
@@ -1061,7 +1127,6 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
       children: List.generate(_uploadedFiles.length, (index) {
         return Chip(
           backgroundColor: scheme.surfaceContainer,
-          side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.5)),
           avatar: Icon(
             Icons.insert_drive_file_outlined,
             size: 16,
@@ -1073,9 +1138,47 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
           ),
           onDeleted: () => _removeFile(index),
           deleteIconColor: scheme.error.withValues(alpha: 0.7),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         );
       }),
+    );
+  }
+
+  Widget _summaryRow(
+    ColorScheme scheme,
+    String label,
+    String value, {
+    bool isLast = false,
+  }) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                color: scheme.onSurface.withValues(alpha: 0.55),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value.isEmpty ? '-' : value,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: scheme.onSurface,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

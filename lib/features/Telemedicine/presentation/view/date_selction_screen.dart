@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:intl/intl.dart';
-import 'package:oceanic/presentation/features/home/view/doctor_details_screen.dart';
+import 'package:oceanic/features/Telemedicine/presentation/view/doctor_details_screen.dart';
 import 'package:oceanic/presentation/widgets/telemedicine_scaffold.dart';
 
 class DateSelectionScreen extends StatefulWidget {

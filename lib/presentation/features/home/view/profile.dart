@@ -1,64 +1,124 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:oceanic/features/auth/presentations/provider/auth_provider.dart';
+import 'package:oceanic/features/policy/presentation/provider/policy_provider.dart';
 import 'package:oceanic/presentation/widgets/drawer.dart';
 import 'package:oceanic/presentation/widgets/floating_app_bar.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
+
   @override
-  ConsumerState<ConsumerStatefulWidget> createState() => _ProfileScreenState();
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  bool _showCardFront = true;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final authState = ref.watch(authProvider);
+    final policyState = ref.watch(policyProvider);
+
+    final user = authState.user;
+    final card = policyState.card;
+    final dependants = policyState.dependants;
 
     return Scaffold(
-      drawer: CustomDrawer(),
+      key: _scaffoldKey,
+      drawer: const CustomDrawer(),
       backgroundColor: scheme.surface,
       body: SafeArea(
         child: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 70),
+            SingleChildScrollView(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 88, 16, 32),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      controller: _scrollController,
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 16,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'My Card',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: scheme.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          _buildSelfSection(scheme),
-                          const SizedBox(height: 24),
-                          _buildMemberCard(scheme),
-                        ],
-                      ),
-                    ),
+                  // --- PROFILE HEADER CARD ---
+                  _buildProfileHeaderCard(
+                    scheme: scheme,
+                    userName:
+                        card?.fullName ??
+                        "${user?.firstName ?? 'Valued'} ${user?.lastName ?? 'Member'}",
+                    email: user?.email ?? 'member@oceanichealthng.com',
+                    memberId:
+                        card?.memberId ?? policyState.policy?.memberId ?? '--',
+                    dependantCount: dependants.length,
                   ),
+
+                  const SizedBox(height: 24),
+
+                  // --- DIGITAL CARD TITLE & TOGGLE ---
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Digital Member Card',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: scheme.onSurface,
+                        ),
+                      ),
+
+                      // Front / Back Card Toggle
+                      Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          color: scheme.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            _buildCardSideButton('Front', _showCardFront, () {
+                              setState(() => _showCardFront = true);
+                            }, scheme),
+                            _buildCardSideButton('Back', !_showCardFront, () {
+                              setState(() => _showCardFront = false);
+                            }, scheme),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // --- DIGITAL HMO CARD VIEW ---
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: _showCardFront
+                        ? _buildCardFront(scheme, card, user)
+                        : _buildCardBack(scheme),
+                  ),
+
+                  const SizedBox(height: 28),
+
+                  // --- EMERGENCY CONTACT CARD ---
+                  _buildSupportInfoCard(scheme),
                 ],
               ),
             ),
+
+            // --- FLOATING APP BAR ---
             FloatingAppBar(
               scrollController: _scrollController,
-              username: 'User',
+              text: 'Profile',
+              onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
             ),
           ],
         ),
@@ -66,81 +126,144 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildSelfSection(ColorScheme scheme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: scheme.onSurface.withValues(alpha: 0.12),
-              child: Icon(
-                Icons.person,
-                size: 26,
-                color: scheme.onSurface.withValues(alpha: 0.4),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Text(
-              'User',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: scheme.onSurface,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Text(
-              'Beneficiary',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: scheme.onSurface,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: scheme.tertiary,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text(
-                '0',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
+  // --- PROFILE HEADER ---
+  Widget _buildProfileHeaderCard({
+    required ColorScheme scheme,
+    required String userName,
+    required String email,
+    required String memberId,
+    required int dependantCount,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 32,
+            backgroundColor: scheme.primary.withValues(alpha: 0.12),
+            child: Icon(Icons.person_rounded, size: 36, color: scheme.primary),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  userName,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: scheme.onSurface,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 2),
+                Text(
+                  email,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: scheme.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        "ID: $memberId",
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: scheme.primary,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: scheme.secondary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        "$dependantCount Beneficiary${dependantCount == 1 ? '' : 's'}",
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: scheme.secondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildMemberCard(ColorScheme scheme) {
-    // The member card intentionally keeps a light appearance in both modes
-    // since it represents a physical ID card with fixed branding colors.
+  // --- CARD SIDE TOGGLE BUTTON ---
+  Widget _buildCardSideButton(
+    String title,
+    bool isSelected,
+    VoidCallback onTap,
+    ColorScheme scheme,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? scheme.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(
+          title,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: isSelected
+                ? scheme.onPrimary
+                : scheme.onSurface.withValues(alpha: 0.6),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- MEMBER CARD FRONT ---
+  Widget _buildCardFront(ColorScheme scheme, dynamic card, dynamic user) {
     const cardBrand = Color(0xFF2C2F7A);
-    const cardText = Color(0xFF444444);
-    const cardSubtext = Color(0xFF888888);
 
     return Container(
+      key: const ValueKey('Front'),
+      width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.10),
-            blurRadius: 20,
+            blurRadius: 18,
             offset: const Offset(0, 6),
           ),
         ],
@@ -155,138 +278,77 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 Column(
                   children: [
                     Container(
-                      width: 110,
-                      height: 130,
+                      width: 100,
+                      height: 120,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: Colors.grey.shade300,
-                          width: 1,
-                        ),
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade300),
                       ),
-                      child: const Icon(
-                        Icons.person,
-                        size: 60,
-                        color: Colors.grey,
-                      ),
+                      child: card?.photo != null && card.photo.isNotEmpty
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                card.photo,
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : Icon(
+                              Icons.person,
+                              size: 54,
+                              color: Colors.grey.shade400,
+                            ),
                     ),
-                    const SizedBox(height: 16),
-                    Container(
-                      width: 150,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Image.asset(
-                        'assets/images/logo.png',
-                        fit: BoxFit.contain,
-                      ),
+                    const SizedBox(height: 12),
+                    Image.asset(
+                      'assets/images/logo.png',
+                      height: 32,
+                      fit: BoxFit.contain,
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 6),
                     const Text(
-                      'OCEANIC HEALTH\nMANAGEMENT LIMITED',
+                      'OCEANIC HEALTH\nMANAGEMENT LTD.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 9,
                         fontWeight: FontWeight.bold,
                         color: cardBrand,
-                        height: 1.4,
+                        height: 1.3,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 30),
                 Expanded(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _buildInfoField('NAME', 'User'),
-                      const SizedBox(height: 12),
-                      _buildInfoField('I.D NUMBER', 'null'),
-                      const SizedBox(height: 12),
-                      _buildInfoField('PLAN', 'AQUA SINGLE'),
-                      const SizedBox(height: 12),
-                      _buildInfoField('VALIDITY', '31-12-2026'),
-                      const SizedBox(height: 12),
                       _buildInfoField(
-                        'CLIENT',
-                        'OCEANIC HEALTH\nMANAGEMENT\nLIMITED',
+                        'FULL NAME',
+                        card?.fullName ??
+                            "${user?.firstName ?? ''} ${user?.lastName ?? ''}"
+                                .trim(),
                       ),
+                      const SizedBox(height: 10),
+                      _buildInfoField('I.D NUMBER', card?.memberId ?? '--'),
+                      const SizedBox(height: 10),
+                      _buildInfoField(
+                        'PLAN',
+                        card?.planVariant.toUpperCase() ?? 'AQUA SINGLE',
+                      ),
+                      const SizedBox(height: 10),
+                      _buildInfoField('VALIDITY', '31-12-2026'),
                     ],
                   ),
                 ),
               ],
             ),
           ),
-          Container(
-            height: 4,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF2C2F7A),
-                  Color(0xFF00B4D8),
-                  Color(0xFFF5A623),
-                ],
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                Text(
-                  'The bearer of this card has subscribed to Oceanic Health Management Limited healthcare plan. It entitles the bearer to receive medical care from the chosen primary healthcare provider and emergency care at any Oceanic Health registered provider.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12, color: cardText, height: 1.6),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'For emergencies and complaint:',
-                  style: TextStyle(fontSize: 12, color: cardText),
-                ),
-                Text(
-                  'Call: 02013300300',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: cardBrand,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'E-mail: hmo@oceanichealthng.com',
-                  style: TextStyle(fontSize: 12, color: cardText),
-                ),
-                Text(
-                  'Web: oceanichealth.com',
-                  style: TextStyle(fontSize: 12, color: cardText),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'If found, please return to:',
-                  style: TextStyle(fontSize: 11, color: cardSubtext),
-                ),
-                Text(
-                  '266, Murtala Muhammed Way, Alagomeji, Yaba, Lagos State.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 11, color: cardSubtext),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [_buildSignature(), _buildSignature()],
-                ),
-              ],
-            ),
-          ),
+
+          // Metallic Gradient Strip
           Container(
             height: 6,
             decoration: const BoxDecoration(
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(20),
-                bottomRight: Radius.circular(20),
-              ),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
               gradient: LinearGradient(
                 colors: [
                   Color(0xFF2C2F7A),
@@ -301,6 +363,73 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
+  // --- MEMBER CARD BACK ---
+  Widget _buildCardBack(ColorScheme scheme) {
+    const cardBrand = Color(0xFF2C2F7A);
+    const cardText = Color(0xFF444444);
+
+    return Container(
+      key: const ValueKey('Back'),
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          const Text(
+            'TERMS & EMERGENCY INFORMATION',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: cardBrand,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'The bearer of this card has subscribed to Oceanic Health Management Limited healthcare plan. It entitles the bearer to receive medical care from chosen primary healthcare providers.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 11, color: cardText, height: 1.5),
+          ),
+          const SizedBox(height: 14),
+          const Divider(),
+          const SizedBox(height: 8),
+          const Text(
+            '24/7 Call Center: 02013300300',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: cardBrand,
+            ),
+          ),
+          const Text(
+            'E-mail: hmo@oceanichealthng.com',
+            style: TextStyle(fontSize: 11, color: cardText),
+          ),
+          const Text(
+            'Web: oceanichealth.com',
+            style: TextStyle(fontSize: 11, color: cardText),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'If found, please return to:\n266, Murtala Muhammed Way, Alagomeji, Yaba, Lagos State.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildInfoField(String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -308,27 +437,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         Text(
           label,
           style: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
+            fontSize: 9,
+            fontWeight: FontWeight.w800,
             color: Color(0xFF2C2F7A),
             letterSpacing: 0.8,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 3),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
             color: const Color(0xFF2C2F7A),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
-            value,
+            value.isEmpty ? '--' : value,
             textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
               fontSize: 12,
-              height: 1.4,
             ),
           ),
         ),
@@ -336,22 +466,43 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildSignature() {
-    return Column(
-      children: [
-        Container(
-          width: 120,
-          height: 40,
-          decoration: const BoxDecoration(
-            border: Border(bottom: BorderSide(color: Color(0xFFBBBBBB))),
+  // --- SUPPORT INFO ---
+  Widget _buildSupportInfoCard(ColorScheme scheme) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.headset_mic_outlined, color: scheme.primary, size: 22),
+              const SizedBox(width: 10),
+              Text(
+                'Help & Enquiries',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: scheme.onSurface,
+                ),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Authorized Signature',
-          style: TextStyle(fontSize: 10, color: Color(0xFF2C2F7A)),
-        ),
-      ],
+          const SizedBox(height: 12),
+          Text(
+            'For urgent emergency care, treatment authorizations, or complaints, reach our customer care desk at 02013300300.',
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.4,
+              color: scheme.onSurface.withValues(alpha: 0.65),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

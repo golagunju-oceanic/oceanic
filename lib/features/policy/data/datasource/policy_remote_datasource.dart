@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:oceanic/core/network/api_client.dart';
 import 'package:oceanic/features/policy/data/models/dependant_model.dart';
 import 'package:oceanic/features/policy/data/models/member_card_model.dart';
@@ -10,9 +12,14 @@ class PolicyRemoteDatasource {
   PolicyRemoteDatasource(this.apiClient);
 
   Future<PolicyModel> getPolicy() async {
-    final response = await apiClient.get("/policies");
-
-    return PolicyModel.fromJson(response.data["data"]);
+    try {
+      final response = await apiClient.get("/policies");
+      return PolicyModel.fromJson(response.data["data"]);
+    } on DioException catch (e) {
+      debugPrint("STATUS: ${e.response?.statusCode}");
+      debugPrint("BODY: ${e.response?.data}");
+      rethrow;
+    }
   }
 
   Future<UtilizationModel> getUtilization() async {
