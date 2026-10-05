@@ -1,39 +1,58 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:oceanic/data/models/states.dart';
+import 'package:oceanic/features/reimbursement/Presentation/provider/reimbursement_provider.dart';
 import 'package:oceanic/presentation/widgets/drawer.dart';
 import 'package:oceanic/presentation/widgets/feedbsck_modal.dart';
 import 'package:oceanic/presentation/widgets/floating_app_bar.dart';
+import 'package:oceanic/features/reimbursement/Presentation/state/reimbursement_state.dart';
+import 'package:oceanic/features/reimbursement/data/models/submit_reimbursement_request.dart';
 
-class ReimbursementScreen extends StatefulWidget {
+class ReimbursementScreen extends ConsumerStatefulWidget {
   const ReimbursementScreen({super.key});
 
   @override
-  State<ReimbursementScreen> createState() => _ReimbursementScreenState();
+  ConsumerState<ReimbursementScreen> createState() =>
+      _ReimbursementScreenState();
 }
 
-class _ReimbursementScreenState extends State<ReimbursementScreen> {
-  final _paFormKey = GlobalKey<FormState>();
-  final _providerFormKey = GlobalKey<FormState>();
+class _ReimbursementScreenState extends ConsumerState<ReimbursementScreen> {
+  final _codeFormKey = GlobalKey<FormState>();
+  final _claimFormKey = GlobalKey<FormState>();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final ScrollController _scrollController = ScrollController();
   final PageController _pageController = PageController();
 
+  final _reimbursementCodeController = TextEditingController();
+  final _accountNumberController = TextEditingController();
+  final _bankNameController = TextEditingController();
+  final _accountNameController = TextEditingController();
   final _providerNameController = TextEditingController();
   final _claimAmountController = TextEditingController();
-  final _reimbursementCodeController = TextEditingController();
-  final _paCodeController = TextEditingController();
-  final _callCenterAgentController = TextEditingController();
   final _commentController = TextEditingController();
 
   int _currentStep =
-      0; // 0: Notice/Intro, 1: PA Code, 2: Provider Details, 3: Documents, 4: Review
+      0; // 0: Notice/Intro, 1: Code + Bank Details, 2: Claim Details, 3: Document, 4: Review
 
   String? _selectedClaimType;
   String? _selectedState;
   String? _selectedCity;
   DateTime? _incurredDate;
 
-  final List<String> _uploadedFiles = [];
-  final int _maxFiles = 5;
+  final States _statesModel = States();
+
+  List<String> get _nigerianStates =>
+      _statesModel.states.map((s) => s['name'] as String).toList();
+
+  List<String> _citiesFor(String? stateName) {
+    if (stateName == null) return [];
+    final stateData = _statesModel.states.firstWhere(
+      (s) => s['name'] == stateName,
+      orElse: () => {'cities': <String>[]},
+    );
+    return List<String>.from(stateData['cities'] as List);
+  }
 
   final List<String> _claimTypes = [
     'Outpatient',
@@ -43,30 +62,18 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     'Maternity',
   ];
 
-  final List<String> _states = [
-    'Lagos',
-    'Abuja',
-    'Rivers',
-    'Kano',
-    'Oyo',
-    'Kaduna',
-  ];
-
-  final List<String> _cities = [
-    'Ikeja',
-    'Lekki',
-    'Victoria Island',
-    'Surulere',
-    'Yaba',
-  ];
+  // Single document, matches SubmitReimbursementRequest.documentPath
+  String? _documentPath;
+  String? _documentFileName;
 
   @override
   void dispose() {
+    _reimbursementCodeController.dispose();
+    _accountNumberController.dispose();
+    _bankNameController.dispose();
+    _accountNameController.dispose();
     _providerNameController.dispose();
     _claimAmountController.dispose();
-    _reimbursementCodeController.dispose();
-    _paCodeController.dispose();
-    _callCenterAgentController.dispose();
     _commentController.dispose();
     _pageController.dispose();
     _scrollController.dispose();
@@ -84,9 +91,9 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
 
   void _next() {
     if (_currentStep == 1) {
-      if (!_paFormKey.currentState!.validate()) return;
+      if (!_codeFormKey.currentState!.validate()) return;
     } else if (_currentStep == 2) {
-      if (!_providerFormKey.currentState!.validate()) return;
+      if (!_claimFormKey.currentState!.validate()) return;
     }
 
     if (_currentStep < 4) {
@@ -125,22 +132,40 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     }
   }
 
-  void _simulateFileUpload() {
-    if (_uploadedFiles.length < _maxFiles) {
-      setState(() {
-        _uploadedFiles.add('receipt_0${_uploadedFiles.length + 1}.pdf');
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('File attached successfully'),
-          duration: Duration(seconds: 1),
-        ),
-      );
-    }
+  void _showLocalError(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void _removeFile(int index) {
-    setState(() => _uploadedFiles.removeAt(index));
+  Future<void> _pickDocument() async {
+    final file = await FilePicker.pickFile(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+    );
+
+    if (file == null || !mounted) {
+      return;
+    }
+
+    if (file.path == null) {
+      _showLocalError('Unable to access the selected file.');
+      return;
+    }
+
+    setState(() {
+      _documentPath = file.path;
+      _documentFileName = file.name;
+    });
+  }
+
+  void _removeDocument() {
+    setState(() {
+      _documentPath = null;
+      _documentFileName = null;
+    });
   }
 
   Future<void> _confirmAndSubmit() async {
@@ -179,19 +204,113 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
   }
 
   void _submit() {
-    final scheme = Theme.of(context).colorScheme;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Reimbursement submitted successfully'),
-        backgroundColor: scheme.primary,
-      ),
+    if (_documentPath == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Attach a receipt or prescription first')),
+      );
+      return;
+    }
+
+    if (_incurredDate == null) {
+      _showLocalError('Please select the claim incurred date.');
+      return;
+    }
+
+    final amount = double.tryParse(_claimAmountController.text.trim());
+
+    if (amount == null || amount <= 0) {
+      _showLocalError('Please enter a valid claim amount.');
+      return;
+    }
+
+    // API requires yyyy-MM-dd.
+    // Example: 2026-10-02
+    final serviceDate = _formatDateForApi(_incurredDate!);
+
+    final request = SubmitReimbursementRequest(
+      reimbursementCode: _reimbursementCodeController.text.trim(),
+
+      amount: amount,
+
+      accountNumber: _accountNumberController.text.trim(),
+
+      bankName: _bankNameController.text.trim(),
+
+      accountName: _accountNameController.text.trim(),
+
+      enrolleeNotes: _commentController.text.trim().isEmpty
+          ? null
+          : _commentController.text.trim(),
+
+      documentPath: _documentPath!,
+
+      items: [
+        ReimbursementItemRequest(
+          // IMPORTANT:
+          // API item_type is "service", not
+          // Outpatient/Inpatient/etc.
+          itemType: 'service',
+
+          // IMPORTANT:
+          // yyyy-MM-dd
+          serviceDate: serviceDate,
+
+          // For now, keep this human-readable.
+          description: _selectedClaimType ?? 'Consultation',
+
+          quantity: 1,
+
+          unitPrice: amount,
+
+          // TEMPORARY FOR TESTING:
+          // This is the exact service ID that worked
+          // in your Postman test.
+          service: 12,
+        ),
+      ],
     );
-    showHmoFeedbackModal(context);
+
+    debugPrint('=========== UI REQUEST ===========');
+    debugPrint('code: ${request.reimbursementCode}');
+    debugPrint('claim type displayed: $_selectedClaimType');
+    debugPrint('service date sent: $serviceDate');
+    debugPrint('service id sent: 12');
+    debugPrint('==================================');
+
+    ref
+        .read(reimbursementViewModelProvider.notifier)
+        .submitReimbursement(request);
+  }
+
+  String _formatDateForApi(DateTime date) {
+    final year = date.year.toString().padLeft(4, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+
+    return '$year-$month-$day';
   }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+
+    ref.listen<ReimbursementState>(reimbursementViewModelProvider, (
+      previous,
+      next,
+    ) {
+      if (next.isSuccess && previous?.isSuccess != true) {
+        showHmoFeedbackModal(context);
+      }
+      if (next.errorMessage != null &&
+          next.errorMessage != previous?.errorMessage) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.errorMessage!),
+            backgroundColor: scheme.error,
+          ),
+        );
+      }
+    });
 
     return Scaffold(
       key: _scaffoldKey,
@@ -202,36 +321,24 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
           children: [
             Column(
               children: [
-                const SizedBox(height: 84), // Top Spacing for FloatingAppBar
-                // Step Progress Indicator (Hidden on Intro Step 0)
+                const SizedBox(height: 84),
                 if (_currentStep > 0) _buildProgressBar(scheme),
-
                 Expanded(
                   child: PageView(
                     controller: _pageController,
                     physics: const NeverScrollableScrollPhysics(),
                     children: [
-                      _buildNoticeStep(
-                        scheme,
-                      ), // Step 0: Notice & PA Code Requirement
-                      _buildPaCodeStep(scheme), // Step 1: PA Code Form
-                      _buildProviderClaimStep(
-                        scheme,
-                      ), // Step 2: Provider & Claim Details
-                      _buildDocumentsStep(
-                        scheme,
-                      ), // Step 3: Supporting Documents
-                      _buildSummaryStep(scheme), // Step 4: Summary Review
+                      _buildNoticeStep(scheme),
+                      _buildCodeAndBankStep(scheme),
+                      _buildClaimDetailsStep(scheme),
+                      _buildDocumentStep(scheme),
+                      _buildSummaryStep(scheme),
                     ],
                   ),
                 ),
-
-                // Bottom Navigation Bar
                 _buildBottomNav(scheme),
               ],
             ),
-
-            // Floating Header Bar
             FloatingAppBar(
               scrollController: _scrollController,
               text: 'Request Reimbursement',
@@ -243,7 +350,7 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     );
   }
 
-  // --- STEP 0: PREREQUISITE NOTICE SCREEN ---
+  // --- STEP 0: NOTICE (unchanged) ---
   Widget _buildNoticeStep(ColorScheme scheme) {
     return SingleChildScrollView(
       controller: _scrollController,
@@ -275,7 +382,7 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
           ),
           const SizedBox(height: 10),
           Text(
-            'Please ensure you have obtained a Pre-Authorization (PA) Code from the Call Center before filling out this reimbursement form.',
+            'Please ensure you have your reimbursement code before filling out this form.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
@@ -284,75 +391,6 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
             ),
           ),
           const SizedBox(height: 24),
-
-          // Call Center Quick Action Card
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerLow ?? scheme.surfaceContainer,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: scheme.primary.withValues(alpha: 0.2)),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.phone_in_talk_outlined,
-                      color: scheme.primary,
-                      size: 22,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Don\'t have a PA Code yet?',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: scheme.onSurface,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Call our 24/7 Call Center desk to request your Pre-Authorization code before proceeding.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: scheme.onSurface.withValues(alpha: 0.6),
-                    height: 1.3,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {},
-                    icon: Icon(Icons.call, size: 18, color: scheme.primary),
-                    label: Text(
-                      'Call 02013300300',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: scheme.primary,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: scheme.primary),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Required Items Checklist
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
@@ -365,16 +403,13 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          _buildChecklistItem('Valid PA Code & Representative Name', scheme),
-          _buildChecklistItem('Reimbursement Reference Code', scheme),
+          _buildChecklistItem('Reimbursement Code', scheme),
+          _buildChecklistItem('Bank Account Details', scheme),
           _buildChecklistItem(
             'Healthcare Provider Name & Claim Amount',
             scheme,
           ),
-          _buildChecklistItem(
-            'Receipts or Medical Prescriptions (Max 5MB)',
-            scheme,
-          ),
+          _buildChecklistItem('One Receipt or Prescription (Max 5MB)', scheme),
         ],
       ),
     );
@@ -401,54 +436,64 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     );
   }
 
-  // --- STEP 1: PA CODE & PRE-AUTH ---
-  Widget _buildPaCodeStep(ColorScheme scheme) {
+  // --- STEP 1: REIMBURSEMENT CODE + BANK DETAILS ---
+  Widget _buildCodeAndBankStep(ColorScheme scheme) {
     return SingleChildScrollView(
       controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       child: Form(
-        key: _paFormKey,
+        key: _codeFormKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildSectionHeader(
-              'Pre-Authorization & Codes',
+              'Reimbursement Code & Bank Details',
               Icons.verified_user_outlined,
               scheme,
             ),
             _buildCardContainer(
               scheme,
               children: [
-                _buildLabel('Pre-Authorization (PA) Code', scheme),
-                _buildTextField(
-                  scheme: scheme,
-                  controller: _paCodeController,
-                  hint: 'e.g. PA-993821',
-                  prefixIcon: Icons.key_outlined,
-                  validator: (v) =>
-                      (v == null || v.isEmpty) ? 'Enter PA code' : null,
-                ),
-                const SizedBox(height: 16),
-                _buildLabel('Issued By (Call Center Representative)', scheme),
-                _buildTextField(
-                  scheme: scheme,
-                  controller: _callCenterAgentController,
-                  hint: 'Enter representative name',
-                  prefixIcon: Icons.support_agent_outlined,
-                  validator: (v) => (v == null || v.isEmpty)
-                      ? 'Enter representative name'
-                      : null,
-                ),
-                const SizedBox(height: 16),
                 _buildLabel('Reimbursement Code', scheme),
                 _buildTextField(
                   scheme: scheme,
                   controller: _reimbursementCodeController,
-                  hint: 'Enter reimbursement reference code',
-                  prefixIcon: Icons.qr_code_scanner_outlined,
+                  hint: 'e.g. PA-993821',
+                  prefixIcon: Icons.key_outlined,
                   validator: (v) => (v == null || v.isEmpty)
                       ? 'Enter reimbursement code'
                       : null,
+                ),
+                const SizedBox(height: 16),
+                _buildLabel('Account Number', scheme),
+                _buildTextField(
+                  scheme: scheme,
+                  controller: _accountNumberController,
+                  hint: 'Enter account number',
+                  prefixIcon: Icons.numbers_outlined,
+                  keyboardType: TextInputType.number,
+                  validator: (v) =>
+                      (v == null || v.isEmpty) ? 'Enter account number' : null,
+                ),
+                const SizedBox(height: 16),
+                _buildLabel('Bank Name', scheme),
+                _buildTextField(
+                  scheme: scheme,
+                  controller: _bankNameController,
+                  hint: 'Enter bank name',
+                  prefixIcon: Icons.account_balance_outlined,
+                  validator: (v) =>
+                      (v == null || v.isEmpty) ? 'Enter bank name' : null,
+                ),
+                const SizedBox(height: 16),
+                _buildLabel('Account Name', scheme),
+                _buildTextField(
+                  scheme: scheme,
+                  controller: _accountNameController,
+                  hint: 'Enter account name',
+                  prefixIcon: Icons.person_outline,
+                  validator: (v) =>
+                      (v == null || v.isEmpty) ? 'Enter account name' : null,
                 ),
               ],
             ),
@@ -458,18 +503,18 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     );
   }
 
-  // --- STEP 2: PROVIDER & CLAIM DETAILS ---
-  Widget _buildProviderClaimStep(ColorScheme scheme) {
+  // --- STEP 2: CLAIM DETAILS ---
+  Widget _buildClaimDetailsStep(ColorScheme scheme) {
     return SingleChildScrollView(
       controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       child: Form(
-        key: _providerFormKey,
+        key: _claimFormKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildSectionHeader(
-              'Provider & Claim Details',
+              'Claim Details',
               Icons.local_hospital_outlined,
               scheme,
             ),
@@ -494,7 +539,7 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
                   scheme: scheme,
                   hint: 'Select State',
                   value: _selectedState,
-                  items: _states,
+                  items: _nigerianStates,
                   onChanged: (v) => setState(() {
                     _selectedState = v;
                     _selectedCity = null;
@@ -535,8 +580,8 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     );
   }
 
-  // --- STEP 3: DOCUMENTS & NOTES ---
-  Widget _buildDocumentsStep(ColorScheme scheme) {
+  // --- STEP 3: DOCUMENT (single file, matches API) ---
+  Widget _buildDocumentStep(ColorScheme scheme) {
     return SingleChildScrollView(
       controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -544,33 +589,18 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeader(
-            'Supporting Documents & Notes',
+            'Supporting Document & Notes',
             Icons.description_outlined,
             scheme,
           ),
           _buildCardContainer(
             scheme,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildLabel('Upload Receipts / Prescriptions', scheme),
-                  Text(
-                    '${_uploadedFiles.length}/$_maxFiles',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: scheme.primary,
-                    ),
-                  ),
-                ],
-              ),
+              _buildLabel('Upload Receipt / Prescription', scheme),
               const SizedBox(height: 8),
-              _buildUploadArea(scheme),
-              if (_uploadedFiles.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                _buildUploadedFilesList(scheme),
-              ],
+              _documentPath == null
+                  ? _buildUploadArea(scheme)
+                  : _buildDocumentChip(scheme),
               const SizedBox(height: 16),
               _buildLabel('Comments / Additional Notes', scheme),
               _buildTextField(
@@ -581,6 +611,43 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
                 maxLines: 4,
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocumentChip(ColorScheme scheme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: scheme.primary.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.insert_drive_file_outlined,
+            color: scheme.primary,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _documentFileName ?? '',
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 13, color: scheme.onSurface),
+            ),
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.close,
+              size: 18,
+              color: scheme.error.withValues(alpha: 0.7),
+            ),
+            onPressed: _removeDocument,
           ),
         ],
       ),
@@ -603,12 +670,21 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
           _buildCardContainer(
             scheme,
             children: [
-              _summaryRow(scheme, 'PA Code', _paCodeController.text),
-              _summaryRow(scheme, 'Issued By', _callCenterAgentController.text),
               _summaryRow(
                 scheme,
                 'Reimbursement Code',
                 _reimbursementCodeController.text,
+              ),
+              _summaryRow(
+                scheme,
+                'Account Number',
+                _accountNumberController.text,
+              ),
+              _summaryRow(scheme, 'Bank Name', _bankNameController.text),
+              _summaryRow(
+                scheme,
+                'Account Name',
+                _accountNameController.text,
                 isLast: true,
               ),
             ],
@@ -646,11 +722,7 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
           _buildCardContainer(
             scheme,
             children: [
-              _summaryRow(
-                scheme,
-                'Attachments',
-                '${_uploadedFiles.length} file(s) attached',
-              ),
+              _summaryRow(scheme, 'Attachment', _documentFileName ?? 'None'),
               _summaryRow(
                 scheme,
                 'Comments',
@@ -661,41 +733,20 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(
-                Icons.info_outline,
-                size: 16,
-                color: scheme.onSurface.withValues(alpha: 0.5),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  'Verify all fields before submitting. Claims cannot be edited after submission.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: scheme.onSurface.withValues(alpha: 0.5),
-                  ),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
   }
 
-  // --- PROGRESS BAR (Active from Step 1) ---
+  // --- PROGRESS BAR ---
   Widget _buildProgressBar(ColorScheme scheme) {
     final stepTitles = [
-      'PA & Codes',
+      'Code & Bank',
       'Claim Details',
-      'Documents',
+      'Document',
       'Review & Submit',
     ];
-
-    final formStepIndex = _currentStep - 1; // 0..3
+    final formStepIndex = _currentStep - 1;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
@@ -747,10 +798,13 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     );
   }
 
-  // --- BOTTOM NAV BUTTONS ---
+  // --- BOTTOM NAV ---
   Widget _buildBottomNav(ColorScheme scheme) {
     final isIntro = _currentStep == 0;
     final isSummary = _currentStep == 4;
+    final isLoading = ref.watch(
+      reimbursementViewModelProvider.select((s) => s.isLoading),
+    );
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -766,7 +820,7 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
             child: SizedBox(
               height: 50,
               child: OutlinedButton(
-                onPressed: _back,
+                onPressed: isLoading ? null : _back,
                 style: OutlinedButton.styleFrom(
                   foregroundColor: scheme.onSurface.withValues(alpha: 0.7),
                   shape: RoundedRectangleBorder(
@@ -783,7 +837,9 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
             child: SizedBox(
               height: 50,
               child: ElevatedButton(
-                onPressed: isSummary ? _confirmAndSubmit : _next,
+                onPressed: isLoading
+                    ? null
+                    : (isSummary ? _confirmAndSubmit : _next),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: scheme.primary,
                   foregroundColor: scheme.onPrimary,
@@ -792,15 +848,26 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
                   ),
                   elevation: 0,
                 ),
-                child: Text(
-                  isIntro
-                      ? 'I Have My PA Code'
-                      : (isSummary ? 'Submit Reimbursement' : 'Next Step'),
-                  style: const TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(
+                        isIntro
+                            ? 'I Have My Code'
+                            : (isSummary
+                                  ? 'Submit Reimbursement'
+                                  : 'Next Step'),
+                        style: const TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ),
           ),
@@ -809,7 +876,7 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     );
   }
 
-  // --- REUSABLE UI HELPERS ---
+  // --- REUSABLE HELPERS (unchanged from before) ---
   Widget _buildSectionHeader(String title, IconData icon, ColorScheme scheme) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 12),
@@ -956,6 +1023,8 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
 
   Widget _buildCityDropdown(ColorScheme scheme) {
     final isDisabled = _selectedState == null;
+    final availableCities = _citiesFor(_selectedState);
+
     return DropdownButtonFormField<String>(
       initialValue: _selectedCity,
       validator: (v) => v == null ? 'Select a city' : null,
@@ -993,7 +1062,7 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
       ),
       items: isDisabled
           ? []
-          : _cities
+          : availableCities
                 .map((city) => DropdownMenuItem(value: city, child: Text(city)))
                 .toList(),
       onChanged: isDisabled ? null : (v) => setState(() => _selectedCity = v),
@@ -1071,35 +1140,22 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
   }
 
   Widget _buildUploadArea(ColorScheme scheme) {
-    final isMaxed = _uploadedFiles.length >= _maxFiles;
     return GestureDetector(
-      onTap: isMaxed ? null : _simulateFileUpload,
+      onTap: _pickDocument,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 22),
         decoration: BoxDecoration(
-          color: isMaxed
-              ? scheme.onSurface.withValues(alpha: 0.03)
-              : scheme.primary.withValues(alpha: 0.05),
+          color: scheme.primary.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isMaxed
-                ? scheme.onSurface.withValues(alpha: 0.1)
-                : scheme.primary.withValues(alpha: 0.3),
-          ),
+          border: Border.all(color: scheme.primary.withValues(alpha: 0.3)),
         ),
         child: Column(
           children: [
-            Icon(
-              Icons.cloud_upload_outlined,
-              color: isMaxed
-                  ? scheme.onSurface.withValues(alpha: 0.3)
-                  : scheme.primary,
-              size: 32,
-            ),
+            Icon(Icons.cloud_upload_outlined, color: scheme.primary, size: 32),
             const SizedBox(height: 6),
             Text(
-              isMaxed ? 'Maximum file limit reached' : 'Tap to upload receipts',
+              'Tap to upload receipt',
               style: TextStyle(
                 color: scheme.onSurface.withValues(alpha: 0.7),
                 fontSize: 13,
@@ -1108,7 +1164,7 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
             ),
             const SizedBox(height: 2),
             Text(
-              'Supports PDF, JPG, PNG (Max 5MB per file)',
+              'Supports PDF, JPG, PNG (Max 5MB)',
               style: TextStyle(
                 color: scheme.onSurface.withValues(alpha: 0.4),
                 fontSize: 11,
@@ -1117,32 +1173,6 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildUploadedFilesList(ColorScheme scheme) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: List.generate(_uploadedFiles.length, (index) {
-        return Chip(
-          backgroundColor: scheme.surfaceContainer,
-          avatar: Icon(
-            Icons.insert_drive_file_outlined,
-            size: 16,
-            color: scheme.primary,
-          ),
-          label: Text(
-            _uploadedFiles[index],
-            style: TextStyle(fontSize: 12, color: scheme.onSurface),
-          ),
-          onDeleted: () => _removeFile(index),
-          deleteIconColor: scheme.error.withValues(alpha: 0.7),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        );
-      }),
     );
   }
 

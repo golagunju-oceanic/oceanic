@@ -1,16 +1,22 @@
 import '../../data/models/agora_token_response.dart';
 import '../repository/telemedicine_repository.dart';
 
-class GenerateTokenUseCase {
+class TelemedicineUseCase {
   final TelemedicineRepository repository;
 
-  GenerateTokenUseCase(this.repository);
+  TelemedicineUseCase(this.repository);
 
-  Future<AgoraTokenResponse> call({
+  Future<AgoraTokenResponse> generateToken({
     required String channel,
-    required int uid,
     String role = 'publisher',
   }) {
-    return repository.generateToken(channel: channel, role: role, uid: uid);
+    return repository.generateToken(channel: channel, role: role);
+  }
+
+  Future<AgoraTokenResponse> initiateCall({
+    required String doctorId,
+    String callType = 'video',
+  }) {
+    return repository.initiateCall(doctorId: doctorId, callType: callType);
   }
 }

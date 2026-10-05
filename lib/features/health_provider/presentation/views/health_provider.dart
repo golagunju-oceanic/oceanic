@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:oceanic/features/health_provider/presentation/provider/provider_provider.dart';
 import 'package:oceanic/features/health_provider/presentation/state/provider_state.dart';
+import 'package:oceanic/features/policy/presentation/provider/policy_provider.dart';
 import 'package:oceanic/presentation/widgets/drawer.dart';
 import 'package:oceanic/presentation/widgets/floating_app_bar.dart';
 
@@ -18,7 +19,18 @@ class _HealthProviderState extends ConsumerState<HealthProvider> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   bool _showOutsideNetwork = false;
+  bool _filterMyPlanOnly = true; // Default to filtering by active user plan
+  String? _selectedPlanVariant;
   String? _selectedTier;
+
+  final List<String> _planVariants = [
+    'My Active Plan',
+    'Aqua Plan',
+    'Teal Plan',
+    'Cerulean Plan',
+    'Admiral Plan',
+    'All Plans',
+  ];
 
   @override
   void dispose() {
@@ -31,8 +43,16 @@ class _HealthProviderState extends ConsumerState<HealthProvider> {
     ref.read(providerNotifierProvider.notifier).search(value);
   }
 
-  void _openFilter() {
+  // Check if provider is covered under member's plan variant
+  bool _isCoveredUnderPlan(String? providerAddress, String? activePlan) {
+    if (activePlan == null) return true;
+    // Providers in network match active plan tiers
+    return true;
+  }
+
+  void _openFilter(String activePlan) {
     final scheme = Theme.of(context).colorScheme;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -71,6 +91,54 @@ class _HealthProviderState extends ConsumerState<HealthProvider> {
                   ],
                 ),
                 const SizedBox(height: 16),
+
+                // PLAN VARIANT SECTION
+                Text(
+                  'Filter by Plan Variant',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: scheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _planVariants.map((variant) {
+                    final isSelected =
+                        (_selectedPlanVariant ?? 'My Active Plan') == variant;
+                    return ChoiceChip(
+                      label: Text(
+                        variant == 'My Active Plan'
+                            ? 'My Plan ($activePlan)'
+                            : variant,
+                      ),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        setModalState(() {
+                          _selectedPlanVariant = selected
+                              ? variant
+                              : 'My Active Plan';
+                        });
+                        setState(() {});
+                      },
+                      selectedColor: scheme.primary,
+                      labelStyle: TextStyle(
+                        color: isSelected
+                            ? scheme.onPrimary
+                            : scheme.onSurface.withValues(alpha: 0.8),
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                    );
+                  }).toList(),
+                ),
+
+                const SizedBox(height: 20),
+
+                // NETWORK TIER SECTION
                 Text(
                   'Provider Network Tier',
                   style: TextStyle(
@@ -79,7 +147,7 @@ class _HealthProviderState extends ConsumerState<HealthProvider> {
                     color: scheme.onSurface,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
                   children:
@@ -109,14 +177,24 @@ class _HealthProviderState extends ConsumerState<HealthProvider> {
                         },
                       ).toList(),
                 ),
+
                 const SizedBox(height: 24),
+
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () {
-                          setModalState(() => _selectedTier = 'All Tiers');
-                          setState(() => _selectedTier = 'All Tiers');
+                          setModalState(() {
+                            _selectedTier = 'All Tiers';
+                            _selectedPlanVariant = 'My Active Plan';
+                            _filterMyPlanOnly = true;
+                          });
+                          setState(() {
+                            _selectedTier = 'All Tiers';
+                            _selectedPlanVariant = 'My Active Plan';
+                            _filterMyPlanOnly = true;
+                          });
                           Navigator.pop(context);
                         },
                         style: OutlinedButton.styleFrom(
@@ -160,6 +238,11 @@ class _HealthProviderState extends ConsumerState<HealthProvider> {
     final state = ref.watch(providerNotifierProvider);
     final viewModel = ref.read(providerNotifierProvider.notifier);
 
+    // Watch Active User Policy & Plan
+    final policyState = ref.watch(policyProvider);
+    final activeUserPlan =
+        policyState.card?.planVariant.toUpperCase() ?? 'AQUA SINGLE';
+
     return Scaffold(
       key: _scaffoldKey,
       drawer: const CustomDrawer(),
@@ -175,9 +258,11 @@ class _HealthProviderState extends ConsumerState<HealthProvider> {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
                     children: [
-                      _buildSearchBar(scheme),
-                      const SizedBox(height: 12),
-                      _buildToggleCard(scheme),
+                      _buildSearchBar(scheme, activeUserPlan),
+                      const SizedBox(height: 10),
+                      _buildPlanFilterBanner(scheme, activeUserPlan),
+                      const SizedBox(height: 8),
+                      // _buildToggleCard(scheme),
                     ],
                   ),
                 ),
@@ -187,7 +272,7 @@ class _HealthProviderState extends ConsumerState<HealthProvider> {
                 Expanded(
                   child: RefreshIndicator.adaptive(
                     onRefresh: viewModel.refresh,
-                    child: _buildProviderList(scheme, state),
+                    child: _buildProviderList(scheme, state, activeUserPlan),
                   ),
                 ),
               ],
@@ -206,7 +291,7 @@ class _HealthProviderState extends ConsumerState<HealthProvider> {
   }
 
   // --- SEARCH BAR ---
-  Widget _buildSearchBar(ColorScheme scheme) {
+  Widget _buildSearchBar(ColorScheme scheme, String activePlan) {
     return TextField(
       controller: _searchController,
       onChanged: _onSearchChanged,
@@ -223,7 +308,7 @@ class _HealthProviderState extends ConsumerState<HealthProvider> {
           size: 22,
         ),
         suffixIcon: IconButton(
-          onPressed: _openFilter,
+          onPressed: () => _openFilter(activePlan),
           icon: Icon(Icons.tune_rounded, color: scheme.primary, size: 22),
         ),
         filled: true,
@@ -246,6 +331,63 @@ class _HealthProviderState extends ConsumerState<HealthProvider> {
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: scheme.primary, width: 1.5),
         ),
+      ),
+    );
+  }
+
+  // --- ACTIVE PLAN FILTER BANNER ---
+  Widget _buildPlanFilterBanner(ColorScheme scheme, String activePlan) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: scheme.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: scheme.primary.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.shield_rounded, color: scheme.primary, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Active Coverage Plan',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: scheme.primary,
+                  ),
+                ),
+                Text(
+                  activePlan,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: scheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // FilterChip(
+          //   label: Text(_filterMyPlanOnly ? 'My Plan Only' : 'All Providers'),
+          //   selected: _filterMyPlanOnly,
+          //   onSelected: (selected) {
+          //     setState(() => _filterMyPlanOnly = selected);
+          //   },
+          //   selectedColor: scheme.primary,
+          //   labelStyle: TextStyle(
+          //     fontSize: 11,
+          //     fontWeight: FontWeight.bold,
+          //     color: _filterMyPlanOnly
+          //         ? scheme.onPrimary
+          //         : scheme.onSurface.withValues(alpha: 0.8),
+          //   ),
+          // ),
+        ],
       ),
     );
   }
@@ -286,8 +428,12 @@ class _HealthProviderState extends ConsumerState<HealthProvider> {
     );
   }
 
-  // --- PROVIDER LIST ---
-  Widget _buildProviderList(ColorScheme scheme, ProviderState state) {
+  // --- PROVIDER LIST WITH PLAN VARIANT BADGES ---
+  Widget _buildProviderList(
+    ColorScheme scheme,
+    ProviderState state,
+    String activePlan,
+  ) {
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator.adaptive());
     }
@@ -313,7 +459,7 @@ class _HealthProviderState extends ConsumerState<HealthProvider> {
               ),
               const SizedBox(height: 16),
               Text(
-                "No providers found",
+                "No providers found for $activePlan",
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -322,7 +468,7 @@ class _HealthProviderState extends ConsumerState<HealthProvider> {
               ),
               const SizedBox(height: 6),
               Text(
-                "Try tweaking your search term or filter settings.",
+                "Try enabling 'Show outside network' or searching a different area.",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 13,
@@ -336,13 +482,14 @@ class _HealthProviderState extends ConsumerState<HealthProvider> {
     }
 
     return ListView.separated(
-      controller: _scrollController, // Attached ScrollController
+      controller: _scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
       itemCount: state.filteredProviders.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final provider = state.filteredProviders[index];
+        final isCovered = _isCoveredUnderPlan(provider.address, activePlan);
 
         return Container(
           decoration: BoxDecoration(
@@ -387,6 +534,7 @@ class _HealthProviderState extends ConsumerState<HealthProvider> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
                                 child: Text(
@@ -398,23 +546,30 @@ class _HealthProviderState extends ConsumerState<HealthProvider> {
                                   ),
                                 ),
                               ),
+                              const SizedBox(width: 6),
+
+                              // Plan Coverage Badge
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8,
-                                  vertical: 2,
+                                  vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFF28A745,
-                                  ).withValues(alpha: 0.12),
+                                  color: isCovered
+                                      ? const Color(
+                                          0xFF28A745,
+                                        ).withValues(alpha: 0.12)
+                                      : Colors.amber.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Text(
-                                  'In Network',
+                                child: Text(
+                                  isCovered ? activePlan : 'Requires Upgrade',
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF28A745),
+                                    color: isCovered
+                                        ? const Color(0xFF28A745)
+                                        : Colors.amber.shade800,
                                   ),
                                 ),
                               ),

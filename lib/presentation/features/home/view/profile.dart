@@ -52,7 +52,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   _buildProfileHeaderCard(
                     scheme: scheme,
                     userName:
-                        card?.fullName ??
+                        // card?.fullName ??
                         "${user?.firstName ?? 'Valued'} ${user?.lastName ?? 'Member'}",
                     email: user?.email ?? 'member@oceanichealthng.com',
                     memberId:
@@ -324,9 +324,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     children: [
                       _buildInfoField(
                         'FULL NAME',
-                        card?.fullName ??
-                            "${user?.firstName ?? ''} ${user?.lastName ?? ''}"
-                                .trim(),
+                        // card?.fullName ??
+                        "${user?.firstName ?? ''} ${user?.lastName ?? ''}"
+                            .trim(),
                       ),
                       const SizedBox(height: 10),
                       _buildInfoField('I.D NUMBER', card?.memberId ?? '--'),

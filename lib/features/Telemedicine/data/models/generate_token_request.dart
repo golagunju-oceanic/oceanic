@@ -3,20 +3,14 @@ class GenerateTokenRequest {
   final String role;
   final int uid;
 
-
   GenerateTokenRequest({
     required this.channel,
-    this.role = "publisher",
-    required this.uid
-   
+    this.role = 'publisher',
+    this.uid = 0,
   });
-
-  Map<String, dynamic> toJson() {
-    return {
-      "channel": channel,
-      "role": role,
-      "uid": uid,
-      
-    };
-  }
+  Map<String, dynamic> toJson() => {
+    'channel': channel,
+    'role': role,
+    'uid': uid,
+  };
 }

@@ -95,8 +95,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                     const SizedBox(height: 16),
                   ],
 
-                  if (policy != null)
-                    _buildPolicySummaryCard(scheme, policy),
+                  if (policy != null) _buildPolicySummaryCard(scheme, policy),
 
                   const SizedBox(height: 16),
 
@@ -132,10 +131,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: LinearGradient(
-          colors: [
-            scheme.primary,
-            scheme.primary.withValues(alpha: 0.8),
-          ],
+          colors: [scheme.primary, scheme.primary.withValues(alpha: 0.8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -173,6 +169,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
+                      // "Olagunju Ganiyu",
                       card.fullName,
                       style: const TextStyle(
                         color: Colors.white,
@@ -220,9 +217,9 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildCardInfo("Plan Variant", card.planVariant.toUpperCase()),
-              _buildCardInfo("Gender", card.gender ?? "--"),
-              _buildCardInfo("Blood Group", card.bloodGroup ?? "--"),
-              _buildCardInfo("Genotype", card.genotype ?? "--"),
+              _buildCardInfo("Gender", card.gender ?? "Male"),
+              _buildCardInfo("Blood Group", card.bloodGroup ?? "A+"),
+              _buildCardInfo("Genotype", card.genotype ?? "AA"),
             ],
           ),
         ],
@@ -255,7 +252,10 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
   }
 
   // --- STATS / UTILIZATION METRICS ---
-  Widget _buildUtilizationGrid(ColorScheme scheme, UtilizationModel utilization) {
+  Widget _buildUtilizationGrid(
+    ColorScheme scheme,
+    UtilizationModel utilization,
+  ) {
     return Row(
       children: [
         Expanded(
@@ -349,13 +349,18 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          _buildPolicyRow('Policy Holder', "${policy.firstName} ${policy.lastName}", scheme),
+          _buildPolicyRow(
+            'Policy Holder',
+            // "Olagunju Ganiyu",
+            "${policy.firstName} ${policy.lastName}",
+            scheme,
+          ),
           _buildDivider(scheme),
           _buildPolicyRow("Member ID", policy.memberId, scheme),
+          // _buildDivider(scheme),
+          // _buildPolicyRow("Policy Number", policy.policyNumber ?? "", scheme),
           _buildDivider(scheme),
-          _buildPolicyRow("Policy Number", policy.policyNumber ?? "-", scheme),
-          _buildDivider(scheme),
-          _buildPolicyRow('Network Tier', 'TIER 4', scheme),
+          _buildPolicyRow('Network Tier', 'TIER 1', scheme),
           _buildDivider(scheme),
           _buildStatusRow(scheme, policy.status),
           _buildDivider(scheme),
@@ -432,7 +437,10 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
   }
 
   Widget _buildDivider(ColorScheme scheme) {
-    return Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.3));
+    return Divider(
+      height: 1,
+      color: scheme.outlineVariant.withValues(alpha: 0.3),
+    );
   }
 
   // --- BENEFICIARIES SECTION ---
@@ -513,7 +521,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: dependants.length,
-      separatorBuilder: (_, __) => _buildDivider(scheme),
+      separatorBuilder: (_, _) => _buildDivider(scheme),
       itemBuilder: (context, index) {
         final d = dependants[index];
         return ListTile(
@@ -528,7 +536,10 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
           ),
           subtitle: Text(
             d.relationship,
-            style: TextStyle(fontSize: 12, color: scheme.onSurface.withValues(alpha: 0.6)),
+            style: TextStyle(
+              fontSize: 12,
+              color: scheme.onSurface.withValues(alpha: 0.6),
+            ),
           ),
         );
       },

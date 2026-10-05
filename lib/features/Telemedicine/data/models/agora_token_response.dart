@@ -21,8 +21,11 @@ class AgoraTokenResponse {
       token: json["token"],
       appId: json["appId"],
       channel: json["channel"],
-      uid: json["uid"],
-      expiresIn: json["expiresIn"],
+      uid: json["uid"] != null ? (json["uid"] as num).toInt() : 0,
+
+      expiresIn: json["expiresIn"] != null
+          ? (json["expiresIn"] as num).toInt()
+          : 3600,
     );
   }
 }

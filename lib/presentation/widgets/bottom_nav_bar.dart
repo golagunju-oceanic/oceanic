@@ -29,7 +29,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
         ),
       ),
       bottomNavigationBar: CurvedNavigationBar(
-        height: 75, // Increased height makes the floating circle bigger
+        height: 75, 
         index: _selectedIndex,
         backgroundColor: Colors.transparent,
         color: kNavyBlue,

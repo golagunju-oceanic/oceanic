@@ -1,13 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:oceanic/features/Telemedicine/data/datasource/call_notification_service.dart';
 import 'package:oceanic/features/auth/presentations/provider/auth_provider.dart';
 import 'package:oceanic/features/health_provider/presentation/views/health_provider.dart';
 import 'package:oceanic/features/policy/presentation/view/policy_details.dart';
+import 'package:oceanic/main.dart';
 import 'package:oceanic/presentation/features/home/view/authorization_screen.dart';
 import 'package:oceanic/features/Telemedicine/presentation/view/doctor_selection_screen.dart';
 import 'package:oceanic/presentation/features/home/view/health_record.dart';
-import 'package:oceanic/presentation/features/home/view/medical_request.dart';
+import 'package:oceanic/features/medical-request/presentation/view/medical_request.dart';
 import 'package:oceanic/presentation/widgets/drawer.dart';
 import 'package:oceanic/presentation/widgets/floating_app_bar.dart';
 
@@ -29,6 +31,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _startBannerTimer());
+    _initDoctorSocket();
+  }
+
+  void _initDoctorSocket() {
+    final user = ref.read(authProvider).user;
+
+    // Check if the logged-in user is a doctor
+    // (Adjust 'user.role' and 'user.id' to match your UserModel properties)
+    if (user != null && user.role.toUpperCase() == 'DOCTOR') {
+      CallNotificationService.initDoctorSocket(
+        // Use 10.0.2.2 for Android Emulator, localhost for iOS simulator, or your live URL
+        baseUrl: "https://oceanic-mobile-backend-1.onrender.com",
+        doctorId: user.doctorId as int, // or user.memberId
+        navigatorKey: navigatorKey,
+      );
+    }
   }
 
   void _startBannerTimer() {

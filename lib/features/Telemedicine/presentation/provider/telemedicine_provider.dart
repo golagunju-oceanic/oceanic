@@ -8,7 +8,7 @@ import 'package:oceanic/features/Telemedicine/domain/usecase/telemidicine_usecas
 import 'package:oceanic/features/Telemedicine/presentation/state/telemedicine_state.dart';
 import '../viewmodel/telemedicine_viewmodel.dart';
 
-
+// 1. Data Source
 final telemedicineRemoteDatasourceProvider =
     Provider<TelemedicineRemoteDataSource>((ref) {
   return TelemedicineRemoteDataSource(
@@ -16,28 +16,26 @@ final telemedicineRemoteDatasourceProvider =
   );
 });
 
+// 2. Repository
 final telemedicineRepositoryProvider =
     Provider<TelemedicineRepository>((ref) {
   return TelemedicineRepositoryImpl(
-    ref.read(
-      telemedicineRemoteDatasourceProvider,
-    ),
+    ref.read(telemedicineRemoteDatasourceProvider),
   );
 });
 
-final generateTokenUseCaseProvider =
-    Provider((ref) {
-  return GenerateTokenUseCase(
-    ref.read(
-      telemedicineRepositoryProvider,
-    ),
+// 3. Single UseCase Provider
+final telemedicineUseCaseProvider =
+    Provider<TelemedicineUseCase>((ref) {
+  return TelemedicineUseCase(
+    ref.read(telemedicineRepositoryProvider),
   );
 });
 
-final telemedicineProvider = StateNotifierProvider<
-    TelemedicineViewModel,
-    TelemedicineState>((ref) {
+// 4. View Model Provider
+final telemedicineProvider =
+    StateNotifierProvider<TelemedicineViewModel, TelemedicineState>((ref) {
   return TelemedicineViewModel(
-    ref.read(generateTokenUseCaseProvider),
+    telemedicineUseCase: ref.read(telemedicineUseCaseProvider),
   );
 });

@@ -11,19 +11,16 @@ class ApiConstants {
   // static const baseUrl = "http://192.168.1.100:3000/api";
 
   /// Production
-  
-  static const baseUrl =
-      "https://oceanic-mobile-backend.onrender.com/api";
 
-  static const login = "/auth/login";
+  static const baseUrl = "https://oceanic-mobile-backend-1.onrender.com/api";
+
+  static const login = "/api/auth/login";
 
   static const register = "/auth/register";
 
-  static const me = "/auth/me";
+  static const me = "/api/auth/me";
 
-  static const forgotPassword =
-      "/auth/forgot-password";
+  static const forgotPassword = "/api/auth/forgot-password";
 
-  static const resetPassword =
-      "/auth/reset-password";
-} 
+  static const resetPassword = "/api/auth/reset-password";
+}

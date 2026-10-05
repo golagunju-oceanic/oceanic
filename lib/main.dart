@@ -7,6 +7,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'firebase_options.dart';
 import 'package:oceanic/core/constants/theme.dart';
 
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   // AuthorizationApi().fetchAuthEndpoint();
   WidgetsFlutterBinding.ensureInitialized();

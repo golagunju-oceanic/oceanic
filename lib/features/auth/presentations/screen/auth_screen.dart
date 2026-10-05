@@ -11,6 +11,7 @@ import 'package:oceanic/features/auth/presentations/provider/auth_provider.dart'
 import 'package:oceanic/features/auth/presentations/screen/forgot_password.dart';
 import 'package:oceanic/features/auth/presentations/state/auth_state.dart';
 import 'package:oceanic/features/auth/presentations/viewModel/auth_view_model.dart';
+import 'package:oceanic/features/doctor/dashboard/presentation/doctor_dashboard.dart';
 
 import 'package:oceanic/presentation/widgets/background_image.dart';
 import 'package:oceanic/presentation/widgets/bottom_nav_bar.dart';
@@ -78,9 +79,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
     showSnackBar(context, "Registration Successful");
 
+    final isDoctor = state.user?.isDoctor ?? false;
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const CustomBottomNavBar()),
+      MaterialPageRoute(
+        builder: (_) => isDoctor
+            ? const DoctorDashboardScreen()
+            : const CustomBottomNavBar(),
+      ),
     );
   }
 
@@ -89,7 +95,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
     await viewModel.login(
       LoginRequest(
-        memberId: memberIdController.text.trim(),
+        identifier: memberIdController.text.trim(),
         password: passwordController.text.trim(),
       ),
     );
@@ -103,9 +109,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       return;
     }
 
+    final isDoctor = state.user?.isDoctor ?? false;
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const CustomBottomNavBar()),
+      MaterialPageRoute(
+        builder: (_) => isDoctor
+            ? const DoctorDashboardScreen()
+            : const CustomBottomNavBar(),
+      ),
     );
   }
 

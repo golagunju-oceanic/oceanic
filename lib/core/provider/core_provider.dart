@@ -1,9 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:oceanic/core/network/api_client.dart';
+import 'package:oceanic/core/network/dio_provider.dart';
+import 'package:oceanic/core/services/secure_storage_service.dart';
 
-import '../network/api_client.dart';
-import '../network/dio_provider.dart';
-import '../services/secure_storage_service.dart';
+// import '../network/api_client.dart';
+// import '../network/dio_provider.dart';
+// import '../services/secure_storage_service.dart';
 
 final flutterStorageProvider =
     Provider(
