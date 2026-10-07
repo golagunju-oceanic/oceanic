@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
+
 import 'package:oceanic/presentation/widgets/drawer.dart';
-import 'package:oceanic/presentation/widgets/floating_app_bar.dart';
 
 class HealthRecord extends StatefulWidget {
   const HealthRecord({super.key});
@@ -10,13 +12,19 @@ class HealthRecord extends StatefulWidget {
 }
 
 class _HealthRecordState extends State<HealthRecord> {
-  DateTimeRange? _selectedDateRange; 
-  String _selectedCategory = 'All';
-  String _searchQuery = '';
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final TextEditingController _searchController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  DateTimeRange? _selectedDateRange;
+
+  String _selectedCategory = 'All';
+
+  String _searchQuery = '';
+
+  // ============================================================
+  // CATEGORIES
+  // ============================================================
 
   final List<String> _categories = [
     'All',
@@ -26,6 +34,11 @@ class _HealthRecordState extends State<HealthRecord> {
     'Prescription',
     'Surgery',
   ];
+
+  // ============================================================
+  // RECORDS
+  // CURRENTLY STATIC SAMPLE DATA
+  // ============================================================
 
   final List<Map<String, dynamic>> _healthRecords = [
     {
@@ -80,26 +93,41 @@ class _HealthRecordState extends State<HealthRecord> {
     },
   ];
 
+  // ============================================================
+  // DISPOSE
+  // ============================================================
+
   @override
   void dispose() {
     _searchController.dispose();
-    _scrollController.dispose();
     super.dispose();
   }
 
-  // --- FILTERING LOGIC ---
+  // ============================================================
+  // FILTERING
+  // ============================================================
+
   List<Map<String, dynamic>> get _filteredRecords {
     return _healthRecords.where((record) {
-      // 1. Category Filter
+      // --------------------------------------------------------
+      // CATEGORY
+      // --------------------------------------------------------
+
       if (_selectedCategory != 'All' && record['type'] != _selectedCategory) {
         return false;
       }
 
-      // 2. Search Query Filter
-      if (_searchQuery.isNotEmpty) {
-        final query = _searchQuery.toLowerCase();
-        final title = (record['title'] as String).toLowerCase();
-        final hospital = (record['hospital'] as String).toLowerCase();
+      // --------------------------------------------------------
+      // SEARCH
+      // --------------------------------------------------------
+
+      if (_searchQuery.trim().isNotEmpty) {
+        final query = _searchQuery.toLowerCase().trim();
+
+        final title = (record['title'] as String? ?? '').toLowerCase();
+
+        final hospital = (record['hospital'] as String? ?? '').toLowerCase();
+
         final doctor = (record['doctor'] as String? ?? '').toLowerCase();
 
         if (!title.contains(query) &&
@@ -109,16 +137,23 @@ class _HealthRecordState extends State<HealthRecord> {
         }
       }
 
-      // 3. Date Range Filter
+      // --------------------------------------------------------
+      // DATE
+      // --------------------------------------------------------
+
       if (_selectedDateRange != null) {
-        final recordDate = DateTime.tryParse(record['date']);
-        if (recordDate == null) return false;
+        final recordDate = DateTime.tryParse(record['date'].toString());
+
+        if (recordDate == null) {
+          return false;
+        }
 
         final start = DateTime(
           _selectedDateRange!.start.year,
           _selectedDateRange!.start.month,
           _selectedDateRange!.start.day,
         );
+
         final end = DateTime(
           _selectedDateRange!.end.year,
           _selectedDateRange!.end.month,
@@ -137,8 +172,19 @@ class _HealthRecordState extends State<HealthRecord> {
     }).toList();
   }
 
-  void _pickDateRange() async {
+  bool get _hasActiveFilters {
+    return _selectedDateRange != null ||
+        _selectedCategory != 'All' ||
+        _searchQuery.trim().isNotEmpty;
+  }
+
+  // ============================================================
+  // DATE PICKER
+  // ============================================================
+
+  Future<void> _pickDateRange() async {
     final scheme = Theme.of(context).colorScheme;
+
     final DateTimeRange? picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2024),
@@ -151,8 +197,11 @@ class _HealthRecordState extends State<HealthRecord> {
         );
       },
     );
-    if (picked != null) {
-      setState(() => _selectedDateRange = picked);
+
+    if (picked != null && mounted) {
+      setState(() {
+        _selectedDateRange = picked;
+      });
     }
   }
 
@@ -165,260 +214,813 @@ class _HealthRecordState extends State<HealthRecord> {
     });
   }
 
-  String _formatDate(DateTime date) =>
-      '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  String _formatDate(DateTime date) {
+    return DateFormat('dd MMM yyyy').format(date);
+  }
+
+  String _formatRecordDate(String value) {
+    final date = DateTime.tryParse(value);
+
+    if (date == null) {
+      return value;
+    }
+
+    return DateFormat('dd MMM yyyy').format(date);
+  }
+
+  // ============================================================
+  // BUILD
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final recordsList = _filteredRecords;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    final records = _filteredRecords;
 
     return Scaffold(
       key: _scaffoldKey,
       drawer: const CustomDrawer(),
-      backgroundColor: scheme.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
+        bottom: false,
         child: Stack(
           children: [
-            Column(
-              children: [
-                const SizedBox(height: 84), // Top margin for FloatingAppBar
-                // Search & Date Filter Bar
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    children: [
-                      _buildSearchBar(scheme),
-                      const SizedBox(height: 10),
-                      _buildDateFilterTile(scheme),
-                      const SizedBox(height: 10),
-                      _buildCategoryChips(scheme),
-                    ],
+            // ==================================================
+            // BACKGROUND DECORATION
+            // ==================================================
+            Positioned(
+              top: -90.h,
+              right: -80.w,
+              child: Container(
+                width: 220.r,
+                height: 220.r,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: scheme.primary.withValues(alpha: isDark ? 0.10 : 0.04),
+                ),
+              ),
+            ),
+
+            Positioned(
+              top: 380.h,
+              left: -100.w,
+              child: Container(
+                width: 200.r,
+                height: 200.r,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: scheme.secondary.withValues(
+                    alpha: isDark ? 0.07 : 0.03,
                   ),
                 ),
+              ),
+            ),
 
-                const SizedBox(height: 8),
+            // ==================================================
+            // CONTENT
+            // ==================================================
+            Column(
+              children: [
+                _buildTopBar(scheme: scheme, isDark: isDark),
 
-                // Results Counter & Reset Button
-                if (_selectedDateRange != null ||
-                    _selectedCategory != 'All' ||
-                    _searchQuery.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 4,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Showing ${recordsList.length} record(s)',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: scheme.onSurface.withValues(alpha: 0.6),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: _resetFilters,
-                          child: Text(
-                            'Reset All Filters',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: scheme.primary,
+                Expanded(
+                  child: CustomScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 560),
+                            child: Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                20.w,
+                                8.h,
+                                20.w,
+                                100.h,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // ===========================
+                                  // HERO
+                                  // ===========================
+                                  _buildOverviewCard(
+                                    scheme: scheme,
+                                    isDark: isDark,
+                                  ),
+
+                                  SizedBox(height: 28.h),
+
+                                  // ===========================
+                                  // SEARCH / FILTER TITLE
+                                  // ===========================
+                                  _buildSectionHeader(
+                                    title: 'Medical history',
+                                    subtitle:
+                                        'Search and filter your health records',
+                                    scheme: scheme,
+                                  ),
+
+                                  SizedBox(height: 14.h),
+
+                                  // ===========================
+                                  // SEARCH
+                                  // ===========================
+                                  _buildSearchBar(
+                                    scheme: scheme,
+                                    isDark: isDark,
+                                  ),
+
+                                  SizedBox(height: 12.h),
+
+                                  // ===========================
+                                  // DATE
+                                  // ===========================
+                                  _buildDateFilter(
+                                    scheme: scheme,
+                                    isDark: isDark,
+                                  ),
+
+                                  SizedBox(height: 15.h),
+
+                                  // ===========================
+                                  // CATEGORY CHIPS
+                                  // ===========================
+                                  _buildCategoryChips(
+                                    scheme: scheme,
+                                    isDark: isDark,
+                                  ),
+
+                                  SizedBox(height: 22.h),
+
+                                  // ===========================
+                                  // RESULTS
+                                  // ===========================
+                                  Row(
+                                    children: [
+                                      Text(
+                                        _hasActiveFilters
+                                            ? 'Filtered records'
+                                            : 'Recent records',
+                                        style: TextStyle(
+                                          fontSize: 14.sp,
+                                          fontWeight: FontWeight.w700,
+                                          color: scheme.onSurface,
+                                        ),
+                                      ),
+
+                                      SizedBox(width: 7.w),
+
+                                      Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 8.w,
+                                          vertical: 4.h,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: scheme.primary.withValues(
+                                            alpha: 0.09,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            30.r,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          records.length.toString(),
+                                          style: TextStyle(
+                                            fontSize: 10.sp,
+                                            fontWeight: FontWeight.w700,
+                                            color: scheme.primary,
+                                          ),
+                                        ),
+                                      ),
+
+                                      const Spacer(),
+
+                                      if (_hasActiveFilters)
+                                        TextButton(
+                                          onPressed: _resetFilters,
+                                          style: TextButton.styleFrom(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 4.w,
+                                            ),
+                                            minimumSize: Size.zero,
+                                            tapTargetSize: MaterialTapTargetSize
+                                                .shrinkWrap,
+                                          ),
+                                          child: Text(
+                                            'Reset filters',
+                                            style: TextStyle(
+                                              fontSize: 11.sp,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+
+                                  SizedBox(height: 12.h),
+
+                                  // ===========================
+                                  // LIST
+                                  // ===========================
+                                  if (records.isEmpty)
+                                    _buildEmptyState(scheme: scheme)
+                                  else
+                                    ListView.separated(
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      itemCount: records.length,
+                                      separatorBuilder: (context, index) {
+                                        return SizedBox(height: 12.h);
+                                      },
+                                      itemBuilder: (context, index) {
+                                        return _buildRecordCard(
+                                          record: records[index],
+                                          scheme: scheme,
+                                          isDark: isDark,
+                                        );
+                                      },
+                                    ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-
-                const SizedBox(height: 4),
-
-                // Records List View
-                Expanded(
-                  child: recordsList.isEmpty
-                      ? _buildEmptyState(scheme)
-                      : ListView.separated(
-                          controller: _scrollController,
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                          itemCount: recordsList.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 10),
-                          itemBuilder: (context, index) {
-                            return _buildRecordCard(recordsList[index], scheme);
-                          },
-                        ),
                 ),
               ],
             ),
-
-            // Floating Header
-            FloatingAppBar(
-              scrollController: _scrollController,
-              text: 'Health Records',
-              onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
-            ),
           ],
         ),
       ),
     );
   }
 
-  // --- SEARCH BAR ---
-  Widget _buildSearchBar(ColorScheme scheme) {
-    return TextField(
-      controller: _searchController,
-      onChanged: (val) => setState(() => _searchQuery = val),
-      style: TextStyle(color: scheme.onSurface, fontSize: 14),
-      decoration: InputDecoration(
-        hintText: 'Search doctor, hospital, or record title...',
-        hintStyle: TextStyle(
-          color: scheme.onSurface.withValues(alpha: 0.4),
-          fontSize: 13,
-        ),
-        prefixIcon: Icon(
-          Icons.search_rounded,
-          color: scheme.onSurface.withValues(alpha: 0.5),
-          size: 20,
-        ),
-        suffixIcon: _searchQuery.isNotEmpty
-            ? IconButton(
-                icon: const Icon(Icons.clear_rounded, size: 18),
-                onPressed: () {
-                  setState(() {
-                    _searchQuery = '';
-                    _searchController.clear();
-                  });
-                },
-              )
-            : null,
-        filled: true,
-        fillColor: scheme.surfaceContainerLow ?? scheme.surfaceContainer,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(
-            color: scheme.outlineVariant.withValues(alpha: 0.3),
+  // ============================================================
+  // TOP BAR
+  // ============================================================
+
+  Widget _buildTopBar({required ColorScheme scheme, required bool isDark}) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
+      child: Row(
+        children: [
+          _buildTopButton(
+            icon: Icons.arrow_back_rounded,
+            scheme: scheme,
+            isDark: isDark,
+            onTap: () {
+              Navigator.of(context).pop();
+            },
           ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: scheme.primary, width: 1.5),
+
+          SizedBox(width: 14.w),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Health Records',
+                  style: TextStyle(
+                    fontSize: 20.sp,
+                    height: 1.1,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                    color: scheme.onSurface,
+                  ),
+                ),
+
+                SizedBox(height: 3.h),
+
+                Text(
+                  'Your medical history',
+                  style: TextStyle(
+                    fontSize: 11.5.sp,
+                    fontWeight: FontWeight.w500,
+                    color: scheme.onSurface.withValues(alpha: 0.50),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          _buildTopButton(
+            icon: Icons.menu_rounded,
+            scheme: scheme,
+            isDark: isDark,
+            onTap: () {
+              _scaffoldKey.currentState?.openDrawer();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopButton({
+    required IconData icon,
+    required ColorScheme scheme,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(15.r),
+        child: Container(
+          width: 43.r,
+          height: 43.r,
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            borderRadius: BorderRadius.circular(15.r),
+            border: Border.all(
+              color: scheme.onSurface.withValues(alpha: isDark ? 0.09 : 0.055),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.08 : 0.035),
+                blurRadius: 12.r,
+                offset: Offset(0, 4.h),
+              ),
+            ],
+          ),
+          child: Icon(icon, size: 21.r, color: scheme.onSurface),
         ),
       ),
     );
   }
 
-  // --- DATE RANGE PICKER TILE ---
-  Widget _buildDateFilterTile(ColorScheme scheme) {
-    final isFiltered = _selectedDateRange != null;
+  // ============================================================
+  // OVERVIEW
+  // ============================================================
 
-    return InkWell(
-      onTap: _pickDateRange,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: isFiltered
-              ? scheme.primary.withValues(alpha: 0.08)
-              : (scheme.surfaceContainerLow ?? scheme.surfaceContainer),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isFiltered
-                ? scheme.primary.withValues(alpha: 0.4)
-                : scheme.outlineVariant.withValues(alpha: 0.3),
-          ),
+  Widget _buildOverviewCard({
+    required ColorScheme scheme,
+    required bool isDark,
+  }) {
+    final completed = _healthRecords
+        .where((record) => record['status'] == 'COMPLETED')
+        .length;
+
+    final active = _healthRecords
+        .where((record) => record['status'] == 'ACTIVE')
+        .length;
+
+    final gradientEnd = Color.lerp(scheme.primary, scheme.secondary, 0.28)!;
+
+    return Container(
+      width: double.infinity,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28.r),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [scheme.primary, gradientEnd],
         ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.calendar_today_rounded,
-              size: 18,
-              color: isFiltered
-                  ? scheme.primary
-                  : scheme.onSurface.withValues(alpha: 0.5),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                isFiltered
-                    ? '${_formatDate(_selectedDateRange!.start)}  ➔  ${_formatDate(_selectedDateRange!.end)}'
-                    : 'Filter by date range',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: isFiltered ? FontWeight.bold : FontWeight.normal,
-                  color: isFiltered
-                      ? scheme.primary
-                      : scheme.onSurface.withValues(alpha: 0.6),
-                ),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.primary.withValues(alpha: isDark ? 0.16 : 0.22),
+            blurRadius: 28.r,
+            offset: Offset(0, 10.h),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -45.r,
+            top: -55.r,
+            child: Container(
+              width: 175.r,
+              height: 175.r,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.07),
               ),
             ),
-            if (isFiltered)
-              GestureDetector(
-                onTap: () => setState(() => _selectedDateRange = null),
+          ),
+
+          Positioned(
+            right: 18.w,
+            bottom: -35.h,
+            child: Icon(
+              Icons.folder_shared_rounded,
+              size: 125.r,
+              color: Colors.white.withValues(alpha: 0.055),
+            ),
+          ),
+
+          Padding(
+            padding: EdgeInsets.all(20.r),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 48.r,
+                      height: 48.r,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(16.r),
+                      ),
+                      child: Icon(
+                        Icons.medical_information_outlined,
+                        size: 24.r,
+                        color: Colors.white,
+                      ),
+                    ),
+
+                    const Spacer(),
+
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 11.w,
+                        vertical: 7.h,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(30.r),
+                      ),
+                      child: Text(
+                        '${_healthRecords.length} records',
+                        style: TextStyle(
+                          fontSize: 10.5.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                SizedBox(height: 21.h),
+
+                Text(
+                  'Your health history,\norganized.',
+                  style: TextStyle(
+                    fontSize: 24.sp,
+                    height: 1.15,
+                    letterSpacing: -0.45,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+
+                SizedBox(height: 9.h),
+
+                Text(
+                  'Review consultations, tests, prescriptions, imaging and other medical records.',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    height: 1.45,
+                    color: Colors.white.withValues(alpha: 0.82),
+                  ),
+                ),
+
+                SizedBox(height: 20.h),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildOverviewStat(
+                        value: completed.toString(),
+                        label: 'Completed',
+                        icon: Icons.check_rounded,
+                      ),
+                    ),
+
+                    SizedBox(width: 10.w),
+
+                    Expanded(
+                      child: _buildOverviewStat(
+                        value: active.toString(),
+                        label: 'Active',
+                        icon: Icons.schedule_rounded,
+                      ),
+                    ),
+
+                    SizedBox(width: 10.w),
+
+                    Expanded(
+                      child: _buildOverviewStat(
+                        value: _categories.length.subtractOne().toString(),
+                        label: 'Categories',
+                        icon: Icons.category_outlined,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOverviewStat({
+    required String value,
+    required String label,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 11.h),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.11),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16.r, color: Colors.white.withValues(alpha: 0.76)),
+
+          SizedBox(height: 8.h),
+
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 19.sp,
+              height: 1,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
+
+          SizedBox(height: 5.h),
+
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 9.2.sp,
+              fontWeight: FontWeight.w500,
+              color: Colors.white.withValues(alpha: 0.68),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // SECTION
+  // ============================================================
+
+  Widget _buildSectionHeader({
+    required String title,
+    required String subtitle,
+    required ColorScheme scheme,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 18.sp,
+            height: 1.15,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.25,
+            color: scheme.onSurface,
+          ),
+        ),
+
+        SizedBox(height: 4.h),
+
+        Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 11.8.sp,
+            height: 1.35,
+            color: scheme.onSurface.withValues(alpha: 0.52),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ============================================================
+  // SEARCH
+  // ============================================================
+
+  Widget _buildSearchBar({required ColorScheme scheme, required bool isDark}) {
+    return Container(
+      height: 50.h,
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(17.r),
+        border: Border.all(
+          color: scheme.onSurface.withValues(alpha: isDark ? 0.09 : 0.055),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.06 : 0.025),
+            blurRadius: 12.r,
+            offset: Offset(0, 4.h),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (value) {
+          setState(() {
+            _searchQuery = value;
+          });
+        },
+        cursorColor: scheme.primary,
+        style: TextStyle(
+          fontSize: 12.5.sp,
+          fontWeight: FontWeight.w500,
+          color: scheme.onSurface,
+        ),
+        decoration: InputDecoration(
+          hintText: 'Search records, hospital or doctor',
+          hintStyle: TextStyle(
+            fontSize: 11.8.sp,
+            color: scheme.onSurface.withValues(alpha: 0.38),
+          ),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            size: 20.r,
+            color: scheme.onSurface.withValues(alpha: 0.43),
+          ),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _searchQuery = '';
+                      _searchController.clear();
+                    });
+                  },
+                  icon: Icon(Icons.close_rounded, size: 18.r),
+                )
+              : null,
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(vertical: 15.h),
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // DATE FILTER
+  // ============================================================
+
+  Widget _buildDateFilter({required ColorScheme scheme, required bool isDark}) {
+    final selected = _selectedDateRange != null;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _pickDateRange,
+        borderRadius: BorderRadius.circular(17.r),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+          decoration: BoxDecoration(
+            color: selected
+                ? scheme.primary.withValues(alpha: 0.07)
+                : scheme.surface,
+            borderRadius: BorderRadius.circular(17.r),
+            border: Border.all(
+              color: selected
+                  ? scheme.primary.withValues(alpha: 0.25)
+                  : scheme.onSurface.withValues(alpha: isDark ? 0.09 : 0.055),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 39.r,
+                height: 39.r,
+                decoration: BoxDecoration(
+                  color: scheme.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(13.r),
+                ),
                 child: Icon(
-                  Icons.cancel_rounded,
-                  size: 18,
+                  Icons.calendar_month_outlined,
+                  size: 19.r,
                   color: scheme.primary,
                 ),
-              )
-            else
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 20,
-                color: scheme.onSurface.withValues(alpha: 0.4),
               ),
-          ],
+
+              SizedBox(width: 11.w),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Date range',
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w500,
+                        color: scheme.onSurface.withValues(alpha: 0.46),
+                      ),
+                    ),
+
+                    SizedBox(height: 3.h),
+
+                    Text(
+                      selected
+                          ? '${_formatDate(_selectedDateRange!.start)} - '
+                                '${_formatDate(_selectedDateRange!.end)}'
+                          : 'Filter records by date',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11.8.sp,
+                        fontWeight: FontWeight.w600,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              if (selected)
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedDateRange = null;
+                    });
+                  },
+                  icon: Icon(Icons.close_rounded, size: 18.r),
+                )
+              else
+                Icon(
+                  Icons.keyboard_arrow_right_rounded,
+                  size: 20.r,
+                  color: scheme.onSurface.withValues(alpha: 0.35),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // --- CATEGORY FILTER CHIPS ---
-  Widget _buildCategoryChips(ColorScheme scheme) {
+  // ============================================================
+  // CATEGORY CHIPS
+  // ============================================================
+
+  Widget _buildCategoryChips({
+    required ColorScheme scheme,
+    required bool isDark,
+  }) {
     return SizedBox(
-      height: 36,
-      child: ListView.builder(
+      height: 38.h,
+      child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: _categories.length,
+        separatorBuilder: (context, index) {
+          return SizedBox(width: 8.w);
+        },
         itemBuilder: (context, index) {
-          final cat = _categories[index];
-          final isSelected = _selectedCategory == cat;
+          final category = _categories[index];
 
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              label: Text(cat),
-              selected: isSelected,
-              onSelected: (_) => setState(() => _selectedCategory = cat),
-              selectedColor: scheme.primary,
-              backgroundColor:
-                  scheme.surfaceContainerLow ?? scheme.surfaceContainer,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              side: BorderSide(
-                color: isSelected
-                    ? scheme.primary
-                    : scheme.outlineVariant.withValues(alpha: 0.3),
-              ),
-              labelStyle: TextStyle(
-                fontSize: 12,
-                color: isSelected
-                    ? scheme.onPrimary
-                    : scheme.onSurface.withValues(alpha: 0.7),
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
+          final selected = _selectedCategory == category;
+
+          return ChoiceChip(
+            label: Text(category),
+            selected: selected,
+            onSelected: (_) {
+              setState(() {
+                _selectedCategory = category;
+              });
+            },
+            showCheckmark: false,
+            selectedColor: scheme.primary,
+            backgroundColor: scheme.surface,
+            side: BorderSide(
+              color: selected
+                  ? scheme.primary
+                  : scheme.onSurface.withValues(alpha: isDark ? 0.09 : 0.055),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30.r),
+            ),
+            padding: EdgeInsets.symmetric(horizontal: 10.w),
+            labelStyle: TextStyle(
+              fontSize: 10.8.sp,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              color: selected
+                  ? scheme.onPrimary
+                  : scheme.onSurface.withValues(alpha: 0.65),
             ),
           );
         },
@@ -426,328 +1028,579 @@ class _HealthRecordState extends State<HealthRecord> {
     );
   }
 
-  // --- RECORD LIST CARD ---
-  Widget _buildRecordCard(Map<String, dynamic> record, ColorScheme scheme) {
-    final statusColor = _getStatusColor(record['status'], scheme);
-    final typeColor = _getIconColor(record['type']);
+  // ============================================================
+  // RECORD CARD
+  // ============================================================
 
-    return Container(
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow ?? scheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.3)),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: () => _showRecordDetailsModal(record, scheme),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: typeColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: _getIcon(record['type']),
+  Widget _buildRecordCard({
+    required Map<String, dynamic> record,
+    required ColorScheme scheme,
+    required bool isDark,
+  }) {
+    final type = record['type'].toString();
+
+    final status = record['status'].toString();
+
+    final typeColor = _getTypeColor(type, scheme);
+
+    final statusColor = _getStatusColor(status, scheme);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22.r),
+        onTap: () {
+          _showRecordDetailsModal(record);
+        },
+        child: Ink(
+          padding: EdgeInsets.all(16.r),
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            borderRadius: BorderRadius.circular(22.r),
+            border: Border.all(
+              color: scheme.onSurface.withValues(alpha: isDark ? 0.08 : 0.05),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.07 : 0.03),
+                blurRadius: 15.r,
+                offset: Offset(0, 5.h),
+              ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 47.r,
+                height: 47.r,
+                decoration: BoxDecoration(
+                  color: typeColor.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(15.r),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
+                child: Icon(_getTypeIcon(type), size: 22.r, color: typeColor),
+              ),
+
+              SizedBox(width: 12.w),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            record['title'].toString(),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13.5.sp,
+                              height: 1.25,
+                              fontWeight: FontWeight.w700,
+                              color: scheme.onSurface,
+                            ),
+                          ),
+                        ),
+
+                        SizedBox(width: 8.w),
+
+                        _buildStatusChip(status: status, color: statusColor),
+                      ],
+                    ),
+
+                    SizedBox(height: 8.h),
+
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.local_hospital_outlined,
+                          size: 14.r,
+                          color: scheme.onSurface.withValues(alpha: 0.40),
+                        ),
+
+                        SizedBox(width: 5.w),
+
+                        Expanded(
+                          child: Text(
+                            record['hospital'].toString(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 10.8.sp,
+                              color: scheme.onSurface.withValues(alpha: 0.54),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 6.h),
+
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.person_outline_rounded,
+                          size: 14.r,
+                          color: scheme.primary,
+                        ),
+
+                        SizedBox(width: 5.w),
+
+                        Expanded(
+                          child: Text(
+                            record['doctor']?.toString() ?? 'Not available',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 10.8.sp,
+                              fontWeight: FontWeight.w600,
+                              color: scheme.primary,
+                            ),
+                          ),
+                        ),
+
+                        SizedBox(width: 8.w),
+
+                        Text(
+                          _formatRecordDate(record['date'].toString()),
+                          style: TextStyle(
+                            fontSize: 9.8.sp,
+                            fontWeight: FontWeight.w500,
+                            color: scheme.onSurface.withValues(alpha: 0.44),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(width: 5.w),
+
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 19.r,
+                color: scheme.onSurface.withValues(alpha: 0.25),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusChip({required String status, required Color color}) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 5.h),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(30.r),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(
+          fontSize: 8.3.sp,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.15,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // DETAILS BOTTOM SHEET
+  // ============================================================
+
+  void _showRecordDetailsModal(Map<String, dynamic> record) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    final type = record['type'].toString();
+
+    final typeColor = _getTypeColor(type, scheme);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          width: double.infinity,
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.82,
+          ),
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 28.h),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // --------------------------------------------
+                  // HANDLE
+                  // --------------------------------------------
+                  Center(
+                    child: Container(
+                      width: 42.w,
+                      height: 4.h,
+                      decoration: BoxDecoration(
+                        color: scheme.onSurface.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(20.r),
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(height: 20.h),
+
+                  // --------------------------------------------
+                  // HEADER
+                  // --------------------------------------------
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              record['title'],
+                      Container(
+                        width: 48.r,
+                        height: 48.r,
+                        decoration: BoxDecoration(
+                          color: typeColor.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(15.r),
+                        ),
+                        child: Icon(
+                          _getTypeIcon(type),
+                          color: typeColor,
+                          size: 23.r,
+                        ),
+                      ),
+
+                      SizedBox(width: 12.w),
+
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              record['title'].toString(),
                               style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
+                                fontSize: 18.sp,
+                                height: 1.2,
+                                fontWeight: FontWeight.w800,
                                 color: scheme.onSurface,
                               ),
                             ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: statusColor.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              record['status'],
-                              style: TextStyle(
-                                color: statusColor,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.location_on_outlined,
-                            size: 14,
-                            color: scheme.onSurface.withValues(alpha: 0.5),
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              record['hospital'],
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: scheme.onSurface.withValues(alpha: 0.6),
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            record['date'],
-                            style: TextStyle(
-                              color: scheme.onSurface.withValues(alpha: 0.5),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (record['doctor'] != null) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.person_outline_rounded,
-                              size: 14,
-                              color: scheme.primary,
-                            ),
-                            const SizedBox(width: 4),
+
+                            SizedBox(height: 5.h),
+
                             Text(
-                              record['doctor'],
+                              type,
                               style: TextStyle(
-                                color: scheme.primary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                                fontSize: 11.sp,
+                                fontWeight: FontWeight.w500,
+                                color: typeColor,
                               ),
                             ),
                           ],
                         ),
-                      ],
+                      ),
+
+                      IconButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        icon: Icon(Icons.close_rounded, size: 21.r),
+                      ),
                     ],
                   ),
-                ),
-                const SizedBox(width: 6),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: scheme.onSurface.withValues(alpha: 0.3),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
-  // --- RECORD DETAILS MODAL SHEET ---
-  void _showRecordDetailsModal(
-    Map<String, dynamic> record,
-    ColorScheme scheme,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  record['title'],
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: scheme.onSurface,
+                  SizedBox(height: 22.h),
+
+                  // --------------------------------------------
+                  // DETAILS
+                  // --------------------------------------------
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 16.w,
+                      vertical: 4.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? scheme.onSurface.withValues(alpha: 0.035)
+                          : scheme.primary.withValues(alpha: 0.025),
+                      borderRadius: BorderRadius.circular(20.r),
+                      border: Border.all(
+                        color: scheme.onSurface.withValues(alpha: 0.05),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildDetailRow(
+                          label: 'Record ID',
+                          value: record['id'].toString(),
+                          scheme: scheme,
+                        ),
+
+                        _detailDivider(scheme),
+
+                        _buildDetailRow(
+                          label: 'Facility',
+                          value: record['hospital'].toString(),
+                          scheme: scheme,
+                        ),
+
+                        _detailDivider(scheme),
+
+                        _buildDetailRow(
+                          label: 'Doctor',
+                          value:
+                              record['doctor']?.toString() ?? 'Not available',
+                          scheme: scheme,
+                        ),
+
+                        _detailDivider(scheme),
+
+                        _buildDetailRow(
+                          label: 'Date',
+                          value: _formatRecordDate(record['date'].toString()),
+                          scheme: scheme,
+                        ),
+
+                        _detailDivider(scheme),
+
+                        _buildDetailRow(
+                          label: 'Status',
+                          value: record['status'].toString(),
+                          scheme: scheme,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close_rounded),
-                ),
-              ],
+
+                  if (record['notes'] != null &&
+                      record['notes'].toString().trim().isNotEmpty) ...[
+                    SizedBox(height: 22.h),
+
+                    Text(
+                      'Clinical notes',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w700,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+
+                    SizedBox(height: 10.h),
+
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(16.r),
+                      decoration: BoxDecoration(
+                        color: scheme.primary.withValues(alpha: 0.055),
+                        borderRadius: BorderRadius.circular(18.r),
+                      ),
+                      child: Text(
+                        record['notes'].toString(),
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          height: 1.55,
+                          color: scheme.onSurface.withValues(alpha: 0.70),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
-            const Divider(),
-            const SizedBox(height: 12),
-            _modalDetailRow('Record ID', record['id'], scheme),
-            _modalDetailRow('Category', record['type'], scheme),
-            _modalDetailRow('Facility', record['hospital'], scheme),
-            _modalDetailRow('Doctor', record['doctor'] ?? 'N/A', scheme),
-            _modalDetailRow('Date', record['date'], scheme),
-            _modalDetailRow('Status', record['status'], scheme),
-            if (record['notes'] != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                'Clinical Notes:',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: scheme.onSurface.withValues(alpha: 0.6),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: scheme.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  record['notes'],
-                  style: TextStyle(fontSize: 13, color: scheme.onSurface),
-                ),
-              ),
-            ],
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _modalDetailRow(String label, String value, ColorScheme scheme) {
+  Widget _buildDetailRow({
+    required String label,
+    required String value,
+    required ColorScheme scheme,
+  }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: EdgeInsets.symmetric(vertical: 13.h),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              color: scheme.onSurface.withValues(alpha: 0.6),
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: scheme.onSurface,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- EMPTY STATE ---
-  Widget _buildEmptyState(ColorScheme scheme) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.folder_off_outlined,
-            size: 48,
-            color: scheme.primary.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'No matching health records',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: scheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Try adjusting your search query or date range filters.',
-            style: TextStyle(
-              fontSize: 12,
-              color: scheme.onSurface.withValues(alpha: 0.5),
-            ),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _resetFilters,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: scheme.primary,
-              foregroundColor: scheme.onPrimary,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          SizedBox(
+            width: 90.w,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 11.sp,
+                color: scheme.onSurface.withValues(alpha: 0.48),
               ),
             ),
-            child: const Text('Reset Filters'),
+          ),
+
+          SizedBox(width: 12.w),
+
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 11.5.sp,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+                color: scheme.onSurface,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  // --- COLOR & ICON HELPERS ---
+  Widget _detailDivider(ColorScheme scheme) {
+    return Divider(height: 1, color: scheme.onSurface.withValues(alpha: 0.055));
+  }
+
+  // ============================================================
+  // EMPTY
+  // ============================================================
+
+  Widget _buildEmptyState({required ColorScheme scheme}) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 38.h),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(22.r),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 62.r,
+            height: 62.r,
+            decoration: BoxDecoration(
+              color: scheme.primary.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.folder_off_outlined,
+              size: 28.r,
+              color: scheme.primary,
+            ),
+          ),
+
+          SizedBox(height: 16.h),
+
+          Text(
+            'No records found',
+            style: TextStyle(
+              fontSize: 15.sp,
+              fontWeight: FontWeight.w700,
+              color: scheme.onSurface,
+            ),
+          ),
+
+          SizedBox(height: 6.h),
+
+          Text(
+            'Try changing your search, category or date filters.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11.5.sp,
+              height: 1.45,
+              color: scheme.onSurface.withValues(alpha: 0.52),
+            ),
+          ),
+
+          SizedBox(height: 16.h),
+
+          TextButton(
+            onPressed: _resetFilters,
+            child: Text(
+              'Reset filters',
+              style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // COLORS
+  // ============================================================
+
   Color _getStatusColor(String status, ColorScheme scheme) {
-    switch (status) {
+    switch (status.toUpperCase()) {
       case 'COMPLETED':
-        return const Color(0xFF28A745);
+        return const Color(0xFF16A34A);
+
       case 'ACTIVE':
         return scheme.primary;
+
       default:
-        return scheme.onSurface.withValues(alpha: 0.5);
+        return scheme.onSurface.withValues(alpha: 0.50);
     }
   }
 
-  Color _getIconColor(String type) {
+  Color _getTypeColor(String type, ColorScheme scheme) {
     switch (type) {
       case 'Consultation':
-        return const Color(0xFF0284C7);
+        return scheme.primary;
+
       case 'Lab Test':
         return const Color(0xFFD97706);
+
       case 'Imaging':
         return const Color(0xFF9333EA);
+
       case 'Prescription':
         return const Color(0xFF16A34A);
+
       case 'Surgery':
         return const Color(0xFFE11D48);
+
       default:
-        return Colors.grey;
+        return scheme.secondary;
     }
   }
 
-  Icon _getIcon(String type) {
-    final color = _getIconColor(type);
+  IconData _getTypeIcon(String type) {
     switch (type) {
       case 'Consultation':
-        return Icon(Icons.person_outline_rounded, color: color, size: 22);
+        return Icons.person_outline_rounded;
+
       case 'Lab Test':
-        return Icon(Icons.science_outlined, color: color, size: 22);
+        return Icons.science_outlined;
+
       case 'Imaging':
-        return Icon(Icons.image_outlined, color: color, size: 22);
+        return Icons.image_outlined;
+
       case 'Prescription':
-        return Icon(Icons.medication_outlined, color: color, size: 22);
+        return Icons.medication_outlined;
+
       case 'Surgery':
-        return Icon(Icons.local_hospital_outlined, color: color, size: 22);
+        return Icons.local_hospital_outlined;
+
       default:
-        return Icon(Icons.medical_services_outlined, color: color, size: 22);
+        return Icons.medical_services_outlined;
     }
+  }
+}
+
+// ===============================================================
+// SMALL HELPER
+// ===============================================================
+
+extension IntMinusOne on int {
+  int subtractOne() {
+    return this > 0 ? this - 1 : 0;
   }
 }

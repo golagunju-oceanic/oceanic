@@ -1,19 +1,25 @@
 import 'package:file_picker/file_picker.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+
 import 'package:image_picker/image_picker.dart';
 
 import 'package:oceanic/data/models/states.dart';
 
 import 'package:oceanic/features/medical-request/data/models/beneficiary_model.dart';
+
 import 'package:oceanic/features/medical-request/data/models/chorinc_medication_model.dart';
+
 import 'package:oceanic/features/medical-request/data/models/refill_request_model.dart';
 
 import 'package:oceanic/features/medical-request/presentation/provider/medication_provider.dart';
+
 import 'package:oceanic/features/medical-request/presentation/state/medication_state.dart';
 
 import 'package:oceanic/presentation/widgets/drawer.dart';
-import 'package:oceanic/presentation/widgets/floating_app_bar.dart';
 
 class MedicalRequest extends ConsumerStatefulWidget {
   const MedicalRequest({super.key});
@@ -26,11 +32,10 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
   int _selectedTabIndex = 0;
 
   String? _selectedState;
+
   String? _selectedCity;
 
   final States _states = States();
-
-  final ScrollController _scrollController = ScrollController();
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -44,9 +49,11 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
   final ImagePicker _imagePicker = ImagePicker();
 
   String? _prescriptionFilePath;
+
   String? _prescriptionFileName;
 
   /// key = drugId
+
   final Map<String, _RefillMedicationDraft> _selectedMedications = {};
 
   List<String> get _nigerianStates {
@@ -58,6 +65,7 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
 
     final stateData = _states.states.firstWhere(
       (state) => state['name'] == stateName,
+
       orElse: () => {'cities': <String>[]},
     );
 
@@ -75,9 +83,10 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
 
   @override
   void dispose() {
-    _scrollController.dispose();
     _deliveryAddressController.dispose();
+
     _conditionController.dispose();
+
     _commentsController.dispose();
 
     super.dispose();
@@ -85,8 +94,9 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final medicationState = ref.watch(medicationViewModelProvider);
 
     ref.listen<MedicationState>(medicationViewModelProvider, (previous, next) {
@@ -108,35 +118,54 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
     return Scaffold(
       key: _scaffoldKey,
       drawer: const CustomDrawer(),
-      backgroundColor: scheme.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
+        bottom: false,
         child: Stack(
           children: [
+            Positioned(
+              top: -90.h,
+              right: -80.w,
+              child: Container(
+                width: 220.r,
+                height: 220.r,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: scheme.primary.withValues(alpha: isDark ? 0.10 : 0.04),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 360.h,
+              left: -100.w,
+              child: Container(
+                width: 200.r,
+                height: 200.r,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: scheme.secondary.withValues(
+                    alpha: isDark ? 0.07 : 0.03,
+                  ),
+                ),
+              ),
+            ),
             Column(
               children: [
-                const SizedBox(height: 84),
-
+                _buildTopBar(scheme: scheme, isDark: isDark),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _buildSegmentedControl(scheme),
+                  padding: EdgeInsets.fromLTRB(20.w, 4.h, 20.w, 10.h),
+                  child: _buildSegmentedControl(scheme, isDark),
                 ),
-
-                const SizedBox(height: 12),
-
                 Expanded(
                   child: _selectedTabIndex == 0
-                      ? _buildRequestRefillForm(scheme, medicationState)
-                      : _buildNewPrescriptionForm(scheme, medicationState),
+                      ? _buildRequestRefillForm(scheme, medicationState, isDark)
+                      : _buildNewPrescriptionForm(
+                          scheme,
+                          medicationState,
+                          isDark,
+                        ),
                 ),
               ],
-            ),
-
-            FloatingAppBar(
-              scrollController: _scrollController,
-              text: 'Medication Request',
-              onMenuTap: () {
-                _scaffoldKey.currentState?.openDrawer();
-              },
             ),
           ],
         ),
@@ -144,12 +173,105 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
     );
   }
 
-  Widget _buildSegmentedControl(ColorScheme scheme) {
+  Widget _buildTopBar({required ColorScheme scheme, required bool isDark}) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
+      child: Row(
+        children: [
+          _buildTopButton(
+            icon: Icons.arrow_back_rounded,
+            scheme: scheme,
+            isDark: isDark,
+            onTap: () => Navigator.of(context).pop(),
+          ),
+          SizedBox(width: 14.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Medication',
+                  style: TextStyle(
+                    fontSize: 20.sp,
+                    height: 1.1,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                    color: scheme.onSurface,
+                  ),
+                ),
+                SizedBox(height: 3.h),
+                Text(
+                  'Refills & prescription requests',
+                  style: TextStyle(
+                    fontSize: 11.5.sp,
+                    fontWeight: FontWeight.w500,
+                    color: scheme.onSurface.withValues(alpha: 0.50),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _buildTopButton(
+            icon: Icons.menu_rounded,
+            scheme: scheme,
+            isDark: isDark,
+            onTap: () => _scaffoldKey.currentState?.openDrawer(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopButton({
+    required IconData icon,
+    required ColorScheme scheme,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(15.r),
+        child: Container(
+          width: 43.r,
+          height: 43.r,
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            borderRadius: BorderRadius.circular(15.r),
+            border: Border.all(
+              color: scheme.onSurface.withValues(alpha: isDark ? 0.09 : 0.055),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.08 : 0.035),
+                blurRadius: 12.r,
+                offset: Offset(0, 4.h),
+              ),
+            ],
+          ),
+          child: Icon(icon, size: 21.r, color: scheme.onSurface),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSegmentedControl(ColorScheme scheme, bool isDark) {
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: EdgeInsets.all(4.r),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(16),
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(
+          color: scheme.onSurface.withValues(alpha: isDark ? 0.08 : 0.05),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.06 : 0.025),
+            blurRadius: 12.r,
+            offset: Offset(0, 4.h),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -192,185 +314,190 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
     required VoidCallback onTap,
     required ColorScheme scheme,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? scheme.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: scheme.primary.withValues(alpha: 0.20),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14.r),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+          padding: EdgeInsets.symmetric(vertical: 11.h, horizontal: 6.w),
+          decoration: BoxDecoration(
+            color: isSelected ? scheme.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(14.r),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 17.r,
+                color: isSelected
+                    ? scheme.onPrimary
+                    : scheme.onSurface.withValues(alpha: 0.48),
+              ),
+              SizedBox(width: 6.w),
+              Flexible(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11.3.sp,
+                    fontWeight: FontWeight.w700,
+                    color: isSelected
+                        ? scheme.onPrimary
+                        : scheme.onSurface.withValues(alpha: 0.62),
                   ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: isSelected
-                  ? scheme.onPrimary
-                  : scheme.onSurface.withValues(alpha: 0.55),
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                title,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: isSelected
-                      ? scheme.onPrimary
-                      : scheme.onSurface.withValues(alpha: 0.65),
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   // --------------------------------------------------
+
   // REFILL
+
   // --------------------------------------------------
 
   Widget _buildRequestRefillForm(
     ColorScheme scheme,
     MedicationState medicationState,
+    bool isDark,
   ) {
     return SingleChildScrollView(
-      controller: _scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildIntroCard(
-            scheme: scheme,
-            icon: Icons.autorenew_rounded,
-            title: 'Request medication refill',
-            description:
-                'Request a refill from your active chronic medication profile.',
-          ),
-
-          const SizedBox(height: 24),
-
-          _buildFormLabel('Enrollee', scheme),
-
-          const SizedBox(height: 8),
-
-          _buildEnrolleeCard(scheme, medicationState),
-
-          const SizedBox(height: 20),
-
-          _buildFormLabel('State', scheme, required: true),
-
-          const SizedBox(height: 8),
-
-          _buildSelectorTile(
-            text: _selectedState ?? 'Select State',
-            icon: Icons.map_outlined,
-            isSet: _selectedState != null,
-            scheme: scheme,
-            onTap: () => _showSearchSheet(
-              title: 'Search State',
-              items: _nigerianStates,
-              onSelected: (value) {
-                setState(() {
-                  _selectedState = value;
-                  _selectedCity = null;
-                });
-              },
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          _buildFormLabel('City', scheme, required: true),
-
-          const SizedBox(height: 8),
-
-          _buildSelectorTile(
-            text: _selectedCity ?? 'Select City',
-            icon: Icons.location_on_outlined,
-            isSet: _selectedCity != null,
-            scheme: scheme,
-            onTap: _selectedState == null
-                ? null
-                : () {
-                    _showSearchSheet(
-                      title: 'Search City',
-                      items: _citiesFor(_selectedState),
-                      onSelected: (value) {
-                        setState(() {
-                          _selectedCity = value;
-                        });
-                      },
-                    );
-                  },
-          ),
-
-          const SizedBox(height: 20),
-
-          _buildFormLabel('Delivery Address', scheme, required: true),
-
-          const SizedBox(height: 8),
-
-          _buildTextField(
-            controller: _deliveryAddressController,
-            scheme: scheme,
-            hint: 'Enter the full delivery address',
-            icon: Icons.home_outlined,
-          ),
-
-          const SizedBox(height: 24),
-
-          Row(
+      key: const ValueKey('refill'),
+      physics: const BouncingScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(20.w, 10.h, 20.w, 100.h),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: _buildFormLabel('Chronic Medications', scheme)),
-
-              if (medicationState.selectedBeneficiary?.isChronicEligible ==
-                  true)
-                IconButton(
-                  tooltip: 'Refresh',
-                  onPressed: () {
-                    final enrollee = medicationState.selectedBeneficiary;
-
-                    if (enrollee != null) {
-                      _loadChronicMedications(enrollee);
-                    }
+              _buildHeroCard(
+                scheme: scheme,
+                icon: Icons.autorenew_rounded,
+                eyebrow: 'MEDICATION REFILL',
+                title: 'Running low on medication?',
+                description:
+                    'Request a refill from your active chronic medication profile and have it processed for delivery.',
+              ),
+              SizedBox(height: 28.h),
+              _buildSectionTitle(
+                title: 'Enrollee',
+                subtitle:
+                    'The request will be made using your enrollee profile.',
+                scheme: scheme,
+              ),
+              SizedBox(height: 12.h),
+              _buildEnrolleeCard(scheme, medicationState, isDark),
+              SizedBox(height: 28.h),
+              _buildSectionTitle(
+                title: 'Delivery information',
+                subtitle: 'Tell us where your medication should be delivered.',
+                scheme: scheme,
+              ),
+              SizedBox(height: 14.h),
+              _buildFormLabel('State', scheme, required: true),
+              SizedBox(height: 7.h),
+              _buildSelectorTile(
+                text: _selectedState ?? 'Select State',
+                icon: Icons.map_outlined,
+                isSet: _selectedState != null,
+                scheme: scheme,
+                isDark: isDark,
+                onTap: () => _showSearchSheet(
+                  title: 'Search State',
+                  items: _nigerianStates,
+                  onSelected: (value) {
+                    setState(() {
+                      _selectedState = value;
+                      _selectedCity = null;
+                    });
                   },
-                  icon: Icon(Icons.refresh_rounded, color: scheme.primary),
                 ),
+              ),
+              SizedBox(height: 18.h),
+              _buildFormLabel('City', scheme, required: true),
+              SizedBox(height: 7.h),
+              _buildSelectorTile(
+                text: _selectedCity ?? 'Select City',
+                icon: Icons.location_on_outlined,
+                isSet: _selectedCity != null,
+                scheme: scheme,
+                isDark: isDark,
+                onTap: _selectedState == null
+                    ? null
+                    : () {
+                        _showSearchSheet(
+                          title: 'Search City',
+                          items: _citiesFor(_selectedState),
+                          onSelected: (value) {
+                            setState(() {
+                              _selectedCity = value;
+                            });
+                          },
+                        );
+                      },
+              ),
+              SizedBox(height: 18.h),
+              _buildFormLabel('Delivery Address', scheme, required: true),
+              SizedBox(height: 7.h),
+              _buildTextField(
+                controller: _deliveryAddressController,
+                scheme: scheme,
+                isDark: isDark,
+                hint: 'Enter the full delivery address',
+                icon: Icons.home_outlined,
+              ),
+              SizedBox(height: 30.h),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildSectionTitle(
+                      title: 'Chronic medications',
+                      subtitle: 'Select the medication you want to refill.',
+                      scheme: scheme,
+                    ),
+                  ),
+                  if (medicationState.selectedBeneficiary?.isChronicEligible ==
+                      true)
+                    IconButton(
+                      tooltip: 'Refresh',
+                      onPressed: () {
+                        final enrollee = medicationState.selectedBeneficiary;
+                        if (enrollee != null) {
+                          _loadChronicMedications(enrollee);
+                        }
+                      },
+                      icon: Icon(
+                        Icons.refresh_rounded,
+                        size: 21.r,
+                        color: scheme.primary,
+                      ),
+                    ),
+                ],
+              ),
+              SizedBox(height: 14.h),
+              _buildChronicMedicationSection(scheme, medicationState, isDark),
+              SizedBox(height: 30.h),
+              _buildSubmitButton(
+                label: 'Submit Refill Request',
+                scheme: scheme,
+                isLoading: medicationState.isSubmitting,
+                onPressed: _submitRefill,
+              ),
+              SizedBox(height: 22.h),
+              _buildContactFooter(scheme),
             ],
           ),
-
-          const SizedBox(height: 8),
-
-          _buildChronicMedicationSection(scheme, medicationState),
-
-          const SizedBox(height: 32),
-
-          _buildSubmitButton(
-            label: 'Submit Refill Request',
-            scheme: scheme,
-            isLoading: medicationState.isSubmitting,
-            onPressed: _submitRefill,
-          ),
-
-          const SizedBox(height: 20),
-
-          _buildContactFooter(scheme),
-        ],
+        ),
       ),
     );
   }
@@ -378,12 +505,14 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
   Widget _buildChronicMedicationSection(
     ColorScheme scheme,
     MedicationState medicationState,
+    bool isDark,
   ) {
     final enrollee = medicationState.selectedBeneficiary;
 
     if (enrollee == null) {
       return _buildEmptyCard(
         scheme,
+        isDark,
         icon: Icons.person_outline_rounded,
         text: 'Unable to load enrollee information.',
       );
@@ -392,6 +521,7 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
     if (!enrollee.isChronicEligible) {
       return _buildEmptyCard(
         scheme,
+        isDark,
         icon: Icons.info_outline_rounded,
         text: 'You are not currently eligible for chronic medication refills.',
       );
@@ -400,9 +530,18 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
     if (medicationState.isLoading) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(28),
-        decoration: _cardDecoration(scheme),
-        child: const Center(child: CircularProgressIndicator()),
+        padding: EdgeInsets.all(28.r),
+        decoration: _modernCardDecoration(scheme, isDark),
+        child: Center(
+          child: SizedBox(
+            width: 24.r,
+            height: 24.r,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.r,
+              color: scheme.primary,
+            ),
+          ),
+        ),
       );
     }
 
@@ -411,6 +550,7 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
     if (medications.isEmpty) {
       return _buildEmptyCard(
         scheme,
+        isDark,
         icon: Icons.medication_outlined,
         text: 'No chronic medications were found for this enrollee.',
       );
@@ -419,8 +559,8 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
     return Column(
       children: medications.map((medication) {
         return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _buildMedicationCard(medication, scheme),
+          padding: EdgeInsets.only(bottom: 12.h),
+          child: _buildMedicationCard(medication, scheme, isDark),
         );
       }).toList(),
     );
@@ -429,24 +569,31 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
   Widget _buildMedicationCard(
     ChronicMedicationModel medication,
     ColorScheme scheme,
+    bool isDark,
   ) {
     final medicationKey = medication.name;
-
     final isSelected = _selectedMedications.containsKey(medicationKey);
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      padding: const EdgeInsets.all(16),
+      duration: const Duration(milliseconds: 220),
+      padding: EdgeInsets.all(15.r),
       decoration: BoxDecoration(
         color: isSelected
-            ? scheme.primary.withValues(alpha: 0.05)
-            : scheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
+            ? scheme.primary.withValues(alpha: isDark ? 0.10 : 0.045)
+            : scheme.surface,
+        borderRadius: BorderRadius.circular(20.r),
         border: Border.all(
           color: isSelected
-              ? scheme.primary
-              : scheme.outlineVariant.withValues(alpha: 0.4),
+              ? scheme.primary.withValues(alpha: 0.55)
+              : scheme.onSurface.withValues(alpha: isDark ? 0.09 : 0.055),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.05 : 0.02),
+            blurRadius: 12.r,
+            offset: Offset(0, 4.h),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -454,6 +601,10 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
             children: [
               Checkbox(
                 value: isSelected,
+                activeColor: scheme.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(5.r),
+                ),
                 onChanged: (value) {
                   setState(() {
                     if (value == true) {
@@ -465,25 +616,35 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
                   });
                 },
               ),
-
-              const SizedBox(width: 4),
-
+              SizedBox(width: 4.w),
+              Container(
+                width: 38.r,
+                height: 38.r,
+                decoration: BoxDecoration(
+                  color: scheme.secondary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                child: Icon(
+                  Icons.medication_outlined,
+                  size: 19.r,
+                  color: scheme.secondary,
+                ),
+              ),
+              SizedBox(width: 10.w),
               Expanded(
                 child: Text(
                   medication.name,
                   style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 12.8.sp,
+                    fontWeight: FontWeight.w700,
                     color: scheme.onSurface,
                   ),
                 ),
               ),
             ],
           ),
-
           if (isSelected) ...[
-            const SizedBox(height: 12),
-
+            SizedBox(height: 15.h),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -493,23 +654,27 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
                     initialValue: _selectedMedications[medicationKey]!.quantity
                         .toString(),
                     keyboardType: TextInputType.number,
-                    decoration: _inputDecoration(scheme, hint: 'Quantity'),
+                    style: TextStyle(fontSize: 12.sp, color: scheme.onSurface),
+                    decoration: _inputDecoration(
+                      scheme,
+                      isDark,
+                      hint: 'Quantity',
+                    ),
                     onChanged: (value) {
-                      final quantity = int.tryParse(value) ?? 0;
-
-                      _selectedMedications[medicationKey]!.quantity = quantity;
+                      _selectedMedications[medicationKey]!.quantity =
+                          int.tryParse(value) ?? 0;
                     },
                   ),
                 ),
-
-                const SizedBox(width: 12),
-
+                SizedBox(width: 10.w),
                 Expanded(
                   flex: 4,
                   child: TextFormField(
                     initialValue: _selectedMedications[medicationKey]!.dosage,
+                    style: TextStyle(fontSize: 12.sp, color: scheme.onSurface),
                     decoration: _inputDecoration(
                       scheme,
+                      isDark,
                       hint: 'e.g. 1 tablet daily',
                     ),
                     onChanged: (value) {
@@ -542,6 +707,7 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
 
     if (enrollee == null) {
       _showLocalError('Unable to load your enrollee profile.');
+
       return;
     }
 
@@ -549,32 +715,38 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
       _showLocalError(
         'You are not currently eligible for chronic medication refills.',
       );
+
       return;
     }
 
     if (_selectedState == null) {
       _showLocalError('Please select a state.');
+
       return;
     }
 
     if (_selectedCity == null) {
       _showLocalError('Please select a city.');
+
       return;
     }
 
     if (_deliveryAddressController.text.trim().isEmpty) {
       _showLocalError('Please enter a delivery address.');
+
       return;
     }
 
     if (_selectedMedications.isEmpty) {
       _showLocalError('Please select at least one medication.');
+
       return;
     }
 
     for (final item in _selectedMedications.values) {
       if (item.quantity <= 0) {
         _showLocalError('Medication quantity must be greater than zero.');
+
         return;
       }
 
@@ -582,19 +754,26 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
         _showLocalError(
           'Please enter the dosage for every selected medication.',
         );
+
         return;
       }
     }
 
     final request = RefillRequestModel(
       beneficiaryId: enrollee.id,
+
       state: _selectedState!,
+
       city: _selectedCity!,
+
       deliveryAddress: _deliveryAddressController.text.trim(),
+
       medications: _selectedMedications.entries.map((entry) {
         return RefillMedicationModel(
           customDrugName: entry.key,
+
           quantity: entry.value.quantity,
+
           dosage: entry.value.dosage.trim(),
         );
       }).toList(),
@@ -616,255 +795,268 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
   }
 
   // --------------------------------------------------
+
   // NEW PRESCRIPTION
+
   // --------------------------------------------------
 
   Widget _buildNewPrescriptionForm(
     ColorScheme scheme,
     MedicationState medicationState,
+    bool isDark,
   ) {
     return SingleChildScrollView(
-      controller: _scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildIntroCard(
-            scheme: scheme,
-            icon: Icons.description_outlined,
-            title: 'New prescription',
-            description:
-                'Upload a valid prescription and tell us where the medication should be processed.',
-          ),
-
-          const SizedBox(height: 24),
-
-          _buildFormLabel('Enrollee', scheme),
-
-          const SizedBox(height: 8),
-
-          _buildEnrolleeCard(scheme, medicationState),
-
-          const SizedBox(height: 20),
-
-          _buildFormLabel(
-            'Prescription Document / Photo',
-            scheme,
-            required: true,
-          ),
-
-          const SizedBox(height: 8),
-
-          _buildPrescriptionUpload(scheme),
-
-          const SizedBox(height: 20),
-
-          _buildFormLabel('State', scheme, required: true),
-
-          const SizedBox(height: 8),
-
-          _buildSelectorTile(
-            text: _selectedState ?? 'Select State',
-            icon: Icons.map_outlined,
-            isSet: _selectedState != null,
-            scheme: scheme,
-            onTap: () => _showSearchSheet(
-              title: 'Search State',
-              items: _nigerianStates,
-              onSelected: (value) {
-                setState(() {
-                  _selectedState = value;
-                  _selectedCity = null;
-                });
-              },
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          _buildFormLabel('City / Location', scheme, required: true),
-
-          const SizedBox(height: 8),
-
-          _buildSelectorTile(
-            text: _selectedCity ?? 'Select City',
-            icon: Icons.location_on_outlined,
-            isSet: _selectedCity != null,
-            scheme: scheme,
-            onTap: _selectedState == null
-                ? null
-                : () {
-                    _showSearchSheet(
-                      title: 'Search City',
-                      items: _citiesFor(_selectedState),
-                      onSelected: (value) {
-                        setState(() {
-                          _selectedCity = value;
-                        });
-                      },
-                    );
+      key: const ValueKey('prescription'),
+      physics: const BouncingScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(20.w, 10.h, 20.w, 100.h),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeroCard(
+                scheme: scheme,
+                icon: Icons.description_outlined,
+                eyebrow: 'NEW PRESCRIPTION',
+                title: 'Have a new prescription?',
+                description:
+                    'Upload a valid prescription and provide the details needed to process your medication request.',
+              ),
+              SizedBox(height: 28.h),
+              _buildSectionTitle(
+                title: 'Enrollee',
+                subtitle:
+                    'This prescription request will be linked to your profile.',
+                scheme: scheme,
+              ),
+              SizedBox(height: 12.h),
+              _buildEnrolleeCard(scheme, medicationState, isDark),
+              SizedBox(height: 28.h),
+              _buildSectionTitle(
+                title: 'Prescription',
+                subtitle: 'Upload a clear copy of the prescription.',
+                scheme: scheme,
+              ),
+              SizedBox(height: 14.h),
+              _buildFormLabel(
+                'Prescription Document / Photo',
+                scheme,
+                required: true,
+              ),
+              SizedBox(height: 7.h),
+              _buildPrescriptionUpload(scheme, isDark),
+              SizedBox(height: 28.h),
+              _buildSectionTitle(
+                title: 'Processing location',
+                subtitle:
+                    'Choose where the medication request should be processed.',
+                scheme: scheme,
+              ),
+              SizedBox(height: 14.h),
+              _buildFormLabel('State', scheme, required: true),
+              SizedBox(height: 7.h),
+              _buildSelectorTile(
+                text: _selectedState ?? 'Select State',
+                icon: Icons.map_outlined,
+                isSet: _selectedState != null,
+                scheme: scheme,
+                isDark: isDark,
+                onTap: () => _showSearchSheet(
+                  title: 'Search State',
+                  items: _nigerianStates,
+                  onSelected: (value) {
+                    setState(() {
+                      _selectedState = value;
+                      _selectedCity = null;
+                    });
                   },
+                ),
+              ),
+              SizedBox(height: 18.h),
+              _buildFormLabel('City / Location', scheme, required: true),
+              SizedBox(height: 7.h),
+              _buildSelectorTile(
+                text: _selectedCity ?? 'Select City',
+                icon: Icons.location_on_outlined,
+                isSet: _selectedCity != null,
+                scheme: scheme,
+                isDark: isDark,
+                onTap: _selectedState == null
+                    ? null
+                    : () {
+                        _showSearchSheet(
+                          title: 'Search City',
+                          items: _citiesFor(_selectedState),
+                          onSelected: (value) {
+                            setState(() {
+                              _selectedCity = value;
+                            });
+                          },
+                        );
+                      },
+              ),
+              SizedBox(height: 28.h),
+              _buildSectionTitle(
+                title: 'Medical information',
+                subtitle: 'Tell us what the prescription is for.',
+                scheme: scheme,
+              ),
+              SizedBox(height: 14.h),
+              _buildFormLabel('Condition / Illness', scheme, required: true),
+              SizedBox(height: 7.h),
+              _buildTextField(
+                controller: _conditionController,
+                scheme: scheme,
+                isDark: isDark,
+                hint: 'e.g. Malaria, hypertension',
+                icon: Icons.health_and_safety_outlined,
+              ),
+              SizedBox(height: 18.h),
+              _buildFormLabel('Additional Comments', scheme),
+              SizedBox(height: 7.h),
+              _buildTextField(
+                controller: _commentsController,
+                scheme: scheme,
+                isDark: isDark,
+                hint: 'Add any extra instructions or notes',
+                maxLines: 4,
+              ),
+              SizedBox(height: 30.h),
+              _buildSubmitButton(
+                label: 'Submit Prescription Request',
+                scheme: scheme,
+                isLoading: medicationState.isSubmitting,
+                onPressed: _submitPrescription,
+              ),
+              if (medicationState.prescriptionResponse != null) ...[
+                SizedBox(height: 16.h),
+                _buildPrescriptionSuccessCard(scheme, medicationState),
+              ],
+              SizedBox(height: 22.h),
+              _buildContactFooter(scheme),
+            ],
           ),
-
-          const SizedBox(height: 20),
-
-          _buildFormLabel('Condition / Illness', scheme, required: true),
-
-          const SizedBox(height: 6),
-
-          Text(
-            'Specify the illness or medical condition this prescription is for.',
-            style: TextStyle(
-              fontSize: 12,
-              color: scheme.onSurface.withValues(alpha: 0.55),
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          _buildTextField(
-            controller: _conditionController,
-            scheme: scheme,
-            hint: 'e.g. Malaria, hypertension',
-            icon: Icons.health_and_safety_outlined,
-          ),
-
-          const SizedBox(height: 20),
-
-          _buildFormLabel('Additional Comments', scheme),
-
-          const SizedBox(height: 8),
-
-          _buildTextField(
-            controller: _commentsController,
-            scheme: scheme,
-            hint: 'Enter any extra instructions or notes for the pharmacist...',
-            maxLines: 4,
-          ),
-
-          const SizedBox(height: 28),
-
-          _buildSubmitButton(
-            label: 'Submit Prescription Request',
-            scheme: scheme,
-            isLoading: medicationState.isSubmitting,
-            onPressed: _submitPrescription,
-          ),
-
-          if (medicationState.prescriptionResponse != null) ...[
-            const SizedBox(height: 16),
-            _buildPrescriptionSuccessCard(scheme, medicationState),
-          ],
-
-          const SizedBox(height: 20),
-
-          _buildContactFooter(scheme),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildPrescriptionUpload(ColorScheme scheme) {
+  Widget _buildPrescriptionUpload(ColorScheme scheme, bool isDark) {
     final hasFile = _prescriptionFilePath != null;
 
-    return InkWell(
-      onTap: _showUploadModal,
-      borderRadius: BorderRadius.circular(16),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: double.infinity,
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: hasFile
-              ? scheme.primary.withValues(alpha: 0.06)
-              : scheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: hasFile ? scheme.primary : scheme.outlineVariant,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _showUploadModal,
+        borderRadius: BorderRadius.circular(20.r),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          width: double.infinity,
+          padding: EdgeInsets.all(18.r),
+          decoration: BoxDecoration(
+            color: hasFile
+                ? scheme.primary.withValues(alpha: isDark ? 0.10 : 0.05)
+                : scheme.surface,
+            borderRadius: BorderRadius.circular(20.r),
+            border: Border.all(
+              color: hasFile
+                  ? scheme.primary.withValues(alpha: 0.35)
+                  : scheme.onSurface.withValues(alpha: isDark ? 0.09 : 0.055),
+            ),
           ),
+          child: hasFile
+              ? Row(
+                  children: [
+                    Container(
+                      width: 44.r,
+                      height: 44.r,
+                      decoration: BoxDecoration(
+                        color: scheme.primary.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(14.r),
+                      ),
+                      child: Icon(
+                        Icons.description_outlined,
+                        size: 21.r,
+                        color: scheme.primary,
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _prescriptionFileName ?? 'Prescription',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12.5.sp,
+                              fontWeight: FontWeight.w700,
+                              color: scheme.onSurface,
+                            ),
+                          ),
+                          SizedBox(height: 4.h),
+                          Text(
+                            'Tap to replace this file',
+                            style: TextStyle(
+                              fontSize: 10.5.sp,
+                              color: scheme.onSurface.withValues(alpha: 0.48),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        setState(() {
+                          _prescriptionFilePath = null;
+                          _prescriptionFileName = null;
+                        });
+                      },
+                      icon: Icon(
+                        Icons.close_rounded,
+                        size: 19.r,
+                        color: scheme.error,
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
+                  children: [
+                    Container(
+                      width: 54.r,
+                      height: 54.r,
+                      decoration: BoxDecoration(
+                        color: scheme.primary.withValues(alpha: 0.08),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.cloud_upload_outlined,
+                        color: scheme.primary,
+                        size: 27.r,
+                      ),
+                    ),
+                    SizedBox(height: 12.h),
+                    Text(
+                      'Upload Prescription',
+                      style: TextStyle(
+                        color: scheme.primary,
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 5.h),
+                    Text(
+                      'PDF, JPG, JPEG or PNG',
+                      style: TextStyle(
+                        fontSize: 10.8.sp,
+                        color: scheme.onSurface.withValues(alpha: 0.48),
+                      ),
+                    ),
+                  ],
+                ),
         ),
-        child: hasFile
-            ? Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: scheme.primary.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.description_outlined,
-                      color: scheme.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _prescriptionFileName ?? 'Prescription',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: scheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          'Tap to replace file',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: scheme.onSurface.withValues(alpha: 0.5),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      setState(() {
-                        _prescriptionFilePath = null;
-                        _prescriptionFileName = null;
-                      });
-                    },
-                    icon: Icon(Icons.close_rounded, color: scheme.error),
-                  ),
-                ],
-              )
-            : Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: scheme.primary.withValues(alpha: 0.08),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.cloud_upload_outlined,
-                      color: scheme.primary,
-                      size: 28,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Upload Prescription',
-                    style: TextStyle(
-                      color: scheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'PDF, JPG, JPEG or PNG',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: scheme.onSurface.withValues(alpha: 0.5),
-                    ),
-                  ),
-                ],
-              ),
       ),
     );
   }
@@ -876,26 +1068,31 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
 
     if (enrollee == null) {
       _showLocalError('Unable to load your enrollee profile.');
+
       return;
     }
 
     if (_prescriptionFilePath == null || _prescriptionFileName == null) {
       _showLocalError('Please upload a prescription.');
+
       return;
     }
 
     if (_selectedState == null) {
       _showLocalError('Please select a state.');
+
       return;
     }
 
     if (_selectedCity == null) {
       _showLocalError('Please select a city.');
+
       return;
     }
 
     if (_conditionController.text.trim().isEmpty) {
       _showLocalError('Please enter the condition or illness.');
+
       return;
     }
 
@@ -903,11 +1100,17 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
         .read(medicationViewModelProvider.notifier)
         .submitPrescription(
           beneficiaryId: enrollee.id,
+
           stateName: _selectedState!,
+
           city: _selectedCity!,
+
           conditionOrIllness: _conditionController.text.trim(),
+
           additionalComments: _commentsController.text.trim(),
+
           prescriptionPath: _prescriptionFilePath!,
+
           prescriptionName: _prescriptionFileName!,
         );
 
@@ -915,10 +1118,12 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
 
     if (success) {
       _conditionController.clear();
+
       _commentsController.clear();
 
       setState(() {
         _prescriptionFilePath = null;
+
         _prescriptionFileName = null;
       });
     }
@@ -929,19 +1134,29 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
     MedicationState state,
   ) {
     final result = state.prescriptionResponse!;
+    const successColor = Color(0xFF16A34A);
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
-        color: scheme.primary.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: scheme.primary.withValues(alpha: 0.20)),
+        color: successColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(color: successColor.withValues(alpha: 0.20)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.check_circle_outline, color: scheme.primary),
-          const SizedBox(width: 12),
+          Container(
+            width: 40.r,
+            height: 40.r,
+            decoration: BoxDecoration(
+              color: successColor.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.check_rounded, color: successColor, size: 21.r),
+          ),
+          SizedBox(width: 12.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -949,23 +1164,25 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
                 Text(
                   'Request submitted',
                   style: TextStyle(
-                    fontWeight: FontWeight.bold,
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w700,
                     color: scheme.onSurface,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 5.h),
                 Text(
                   'Request: ${result.requestNumber}',
                   style: TextStyle(
-                    fontSize: 13,
-                    color: scheme.onSurface.withValues(alpha: 0.7),
+                    fontSize: 10.8.sp,
+                    color: scheme.onSurface.withValues(alpha: 0.58),
                   ),
                 ),
+                SizedBox(height: 2.h),
                 Text(
                   'Status: ${result.status}',
                   style: TextStyle(
-                    fontSize: 13,
-                    color: scheme.onSurface.withValues(alpha: 0.7),
+                    fontSize: 10.8.sp,
+                    color: scheme.onSurface.withValues(alpha: 0.58),
                   ),
                 ),
               ],
@@ -977,23 +1194,29 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
   }
 
   // --------------------------------------------------
+
   // BENEFICIARIES
+
   // --------------------------------------------------
 
   Widget _buildEnrolleeCard(
     ColorScheme scheme,
     MedicationState medicationState,
+    bool isDark,
   ) {
     if (medicationState.isLoading &&
         medicationState.selectedBeneficiary == null) {
       return Container(
-        height: 76,
-        decoration: _cardDecoration(scheme),
-        child: const Center(
+        height: 80.h,
+        decoration: _modernCardDecoration(scheme, isDark),
+        child: Center(
           child: SizedBox(
-            width: 22,
-            height: 22,
-            child: CircularProgressIndicator(strokeWidth: 2),
+            width: 22.r,
+            height: 22.r,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.r,
+              color: scheme.primary,
+            ),
           ),
         ),
       );
@@ -1002,176 +1225,270 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
     final enrollee = medicationState.selectedBeneficiary;
 
     if (enrollee == null) {
-      return InkWell(
-        onTap: () {
-          ref.read(medicationViewModelProvider.notifier).getBeneficiaries();
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: _cardDecoration(scheme),
-          child: Row(
-            children: [
-              Icon(Icons.refresh_rounded, color: scheme.primary),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text('Unable to load enrollee profile. Tap to retry.'),
-              ),
-            ],
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            ref.read(medicationViewModelProvider.notifier).getBeneficiaries();
+          },
+          borderRadius: BorderRadius.circular(20.r),
+          child: Ink(
+            padding: EdgeInsets.all(16.r),
+            decoration: _modernCardDecoration(scheme, isDark),
+            child: Row(
+              children: [
+                Container(
+                  width: 44.r,
+                  height: 44.r,
+                  decoration: BoxDecoration(
+                    color: scheme.error.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(14.r),
+                  ),
+                  child: Icon(
+                    Icons.refresh_rounded,
+                    size: 21.r,
+                    color: scheme.error,
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Text(
+                    'Unable to load enrollee profile. Tap to retry.',
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      height: 1.4,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
     }
 
+    final name = enrollee.fullName.trim();
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : 'M';
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
-        color: scheme.primary.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: scheme.primary.withValues(alpha: 0.18)),
+        color: scheme.primary.withValues(alpha: isDark ? 0.10 : 0.055),
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: scheme.primary.withValues(alpha: 0.15)),
       ),
       child: Row(
         children: [
           Container(
-            width: 46,
-            height: 46,
+            width: 48.r,
+            height: 48.r,
+            alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: scheme.primary.withValues(alpha: 0.1),
+              color: scheme.primary,
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.person_outline_rounded, color: scheme.primary),
+            child: Text(
+              initial,
+              style: TextStyle(
+                fontSize: 17.sp,
+                fontWeight: FontWeight.w800,
+                color: scheme.onPrimary,
+              ),
+            ),
           ),
-
-          const SizedBox(width: 12),
-
+          SizedBox(width: 12.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   enrollee.fullName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w700,
                     color: scheme.onSurface,
                   ),
                 ),
-
-                const SizedBox(height: 4),
-
+                SizedBox(height: 4.h),
                 Text(
                   'Member ID: ${enrollee.memberId}',
                   style: TextStyle(
-                    fontSize: 12,
-                    color: scheme.onSurface.withValues(alpha: 0.55),
+                    fontSize: 10.8.sp,
+                    fontWeight: FontWeight.w500,
+                    color: scheme.onSurface.withValues(alpha: 0.52),
                   ),
                 ),
               ],
             ),
           ),
-
-          Icon(Icons.verified_user_outlined, color: scheme.primary, size: 22),
+          Container(
+            width: 34.r,
+            height: 34.r,
+            decoration: BoxDecoration(
+              color: scheme.primary.withValues(alpha: 0.10),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.verified_user_outlined,
+              size: 18.r,
+              color: scheme.primary,
+            ),
+          ),
         ],
       ),
     );
   }
 
   // Widget _buildEligibilityIndicator(
+
   //   ColorScheme scheme,
+
   //   BeneficiaryModel beneficiary,
+
   // ) {
+
   //   final eligible = beneficiary.isChronicEligible;
 
   //   final color = eligible ? scheme.primary : scheme.error;
 
   //   return Row(
+
   //     children: [
+
   //       Icon(
+
   //         eligible ? Icons.check_circle_outline : Icons.info_outline,
+
   //         color: color,
+
   //         size: 16,
+
   //       ),
+
   //       const SizedBox(width: 6),
+
   //       Expanded(
+
   //         child: Text(
+
   //           eligible
+
   //               ? 'Eligible for chronic medication refill'
+
   //               : 'Not currently eligible for chronic medication refill',
+
   //           style: TextStyle(
+
   //             color: color,
+
   //             fontSize: 12,
+
   //             fontWeight: FontWeight.w500,
+
   //           ),
+
   //         ),
+
   //       ),
+
   //     ],
+
   //   );
+
   // }
 
   // --------------------------------------------------
+
   // FILE PICKING
+
   // --------------------------------------------------
 
   void _showUploadModal() {
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
 
     showModalBottomSheet(
       context: context,
-      showDragHandle: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      backgroundColor: Colors.transparent,
+      showDragHandle: false,
       builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Upload Prescription',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: scheme.onSurface,
+        return Container(
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 24.h),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 42.w,
+                      height: 4.h,
+                      decoration: BoxDecoration(
+                        color: scheme.onSurface.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(20.r),
+                      ),
+                    ),
                   ),
-                ),
-
-                const SizedBox(height: 12),
-
-                _uploadTile(
-                  icon: Icons.camera_alt_outlined,
-                  text: 'Take a photo',
-                  scheme: scheme,
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    _pickImage(ImageSource.camera);
-                  },
-                ),
-
-                _uploadTile(
-                  icon: Icons.photo_library_outlined,
-                  text: 'Select from gallery',
-                  scheme: scheme,
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    _pickImage(ImageSource.gallery);
-                  },
-                ),
-
-                _uploadTile(
-                  icon: Icons.folder_open_outlined,
-                  text: 'Select from files',
-                  scheme: scheme,
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    _pickFile();
-                  },
-                ),
-              ],
+                  SizedBox(height: 20.h),
+                  Text(
+                    'Upload Prescription',
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w800,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                  SizedBox(height: 5.h),
+                  Text(
+                    'Choose where you want to upload the prescription from.',
+                    style: TextStyle(
+                      fontSize: 11.3.sp,
+                      height: 1.4,
+                      color: scheme.onSurface.withValues(alpha: 0.52),
+                    ),
+                  ),
+                  SizedBox(height: 16.h),
+                  _uploadTile(
+                    icon: Icons.camera_alt_outlined,
+                    text: 'Take a photo',
+                    scheme: scheme,
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      _pickImage(ImageSource.camera);
+                    },
+                  ),
+                  SizedBox(height: 8.h),
+                  _uploadTile(
+                    icon: Icons.photo_library_outlined,
+                    text: 'Select from gallery',
+                    scheme: scheme,
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      _pickImage(ImageSource.gallery);
+                    },
+                  ),
+                  SizedBox(height: 8.h),
+                  _uploadTile(
+                    icon: Icons.folder_open_outlined,
+                    text: 'Select from files',
+                    scheme: scheme,
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      _pickFile();
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -1182,6 +1499,7 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
   Future<void> _pickImage(ImageSource source) async {
     final image = await _imagePicker.pickImage(
       source: source,
+
       imageQuality: 85,
     );
 
@@ -1191,6 +1509,7 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
 
     setState(() {
       _prescriptionFilePath = image.path;
+
       _prescriptionFileName = image.name;
     });
   }
@@ -1198,6 +1517,7 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
   Future<void> _pickFile() async {
     final file = await FilePicker.pickFile(
       type: FileType.custom,
+
       allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
     );
 
@@ -1207,11 +1527,13 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
 
     if (file.path == null) {
       _showLocalError('Unable to access the selected file.');
+
       return;
     }
 
     setState(() {
       _prescriptionFilePath = file.path;
+
       _prescriptionFileName = file.name;
     });
   }
@@ -1222,34 +1544,55 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
     required ColorScheme scheme,
     required VoidCallback onTap,
   }) {
-    return ListTile(
-      onTap: onTap,
-      contentPadding: EdgeInsets.zero,
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: scheme.primary.withValues(alpha: 0.1),
-          shape: BoxShape.circle,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(17.r),
+        child: Container(
+          padding: EdgeInsets.all(13.r),
+          decoration: BoxDecoration(
+            color: scheme.onSurface.withValues(alpha: 0.035),
+            borderRadius: BorderRadius.circular(17.r),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40.r,
+                height: 40.r,
+                decoration: BoxDecoration(
+                  color: scheme.primary.withValues(alpha: 0.09),
+                  borderRadius: BorderRadius.circular(13.r),
+                ),
+                child: Icon(icon, color: scheme.primary, size: 20.r),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    fontSize: 12.5.sp,
+                    fontWeight: FontWeight.w600,
+                    color: scheme.onSurface,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 20.r,
+                color: scheme.onSurface.withValues(alpha: 0.35),
+              ),
+            ],
+          ),
         ),
-        child: Icon(icon, color: scheme.primary, size: 20),
-      ),
-      title: Text(
-        text,
-        style: TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w500,
-          color: scheme.onSurface,
-        ),
-      ),
-      trailing: Icon(
-        Icons.chevron_right,
-        color: scheme.onSurface.withValues(alpha: 0.4),
       ),
     );
   }
 
   // --------------------------------------------------
+
   // SEARCH SHEET
+
   // --------------------------------------------------
 
   void _showSearchSheet({
@@ -1260,10 +1603,7 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      showDragHandle: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) {
         List<String> filtered = List.from(items);
 
@@ -1271,84 +1611,145 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
           builder: (context, setModalState) {
             final scheme = Theme.of(context).colorScheme;
 
-            return SizedBox(
-              height: MediaQuery.of(context).size.height * 0.70,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-                child: Column(
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        color: scheme.onSurface,
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    TextField(
-                      autofocus: true,
-                      onChanged: (value) {
-                        setModalState(() {
-                          filtered = items
-                              .where(
-                                (item) => item.toLowerCase().contains(
-                                  value.toLowerCase(),
-                                ),
-                              )
-                              .toList();
-                        });
-                      },
-                      decoration: InputDecoration(
-                        hintText: 'Search...',
-                        prefixIcon: const Icon(Icons.search),
-                        filled: true,
-                        fillColor: scheme.surfaceContainerLow,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.72,
+              decoration: BoxDecoration(
+                color: scheme.surface,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 0),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 42.w,
+                        height: 4.h,
+                        decoration: BoxDecoration(
+                          color: scheme.onSurface.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(20.r),
                         ),
                       ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    Expanded(
-                      child: filtered.isEmpty
-                          ? Center(
-                              child: Text(
-                                'No results found',
-                                style: TextStyle(
-                                  color: scheme.onSurface.withValues(
-                                    alpha: 0.5,
+                      SizedBox(height: 18.h),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: TextStyle(
+                                fontSize: 18.sp,
+                                fontWeight: FontWeight.w800,
+                                color: scheme.onSurface,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: Icon(Icons.close_rounded, size: 21.r),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 12.h),
+                      TextField(
+                        autofocus: true,
+                        onChanged: (value) {
+                          setModalState(() {
+                            filtered = items
+                                .where(
+                                  (item) => item.toLowerCase().contains(
+                                    value.toLowerCase(),
+                                  ),
+                                )
+                                .toList();
+                          });
+                        },
+                        style: TextStyle(
+                          fontSize: 12.5.sp,
+                          color: scheme.onSurface,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Search...',
+                          hintStyle: TextStyle(
+                            fontSize: 11.5.sp,
+                            color: scheme.onSurface.withValues(alpha: 0.40),
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search_rounded,
+                            size: 20.r,
+                            color: scheme.onSurface.withValues(alpha: 0.45),
+                          ),
+                          filled: true,
+                          fillColor: scheme.onSurface.withValues(alpha: 0.04),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16.r),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16.r),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16.r),
+                            borderSide: BorderSide(
+                              color: scheme.primary,
+                              width: 1.2.r,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 12.h),
+                      Expanded(
+                        child: filtered.isEmpty
+                            ? Center(
+                                child: Text(
+                                  'No results found',
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    color: scheme.onSurface.withValues(
+                                      alpha: 0.50,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            )
-                          : ListView.separated(
-                              itemCount: filtered.length,
-                              separatorBuilder: (_, _) {
-                                return Divider(
+                              )
+                            : ListView.separated(
+                                itemCount: filtered.length,
+                                separatorBuilder: (_, __) => Divider(
                                   height: 1,
-                                  color: scheme.outlineVariant.withValues(
-                                    alpha: 0.3,
+                                  color: scheme.onSurface.withValues(
+                                    alpha: 0.055,
                                   ),
-                                );
-                              },
-                              itemBuilder: (context, index) {
-                                return ListTile(
-                                  title: Text(filtered[index]),
-                                  onTap: () {
-                                    onSelected(filtered[index]);
-                                    Navigator.pop(context);
-                                  },
-                                );
-                              },
-                            ),
-                    ),
-                  ],
+                                ),
+                                itemBuilder: (context, index) {
+                                  return ListTile(
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 2.w,
+                                    ),
+                                    title: Text(
+                                      filtered[index],
+                                      style: TextStyle(
+                                        fontSize: 12.5.sp,
+                                        fontWeight: FontWeight.w500,
+                                        color: scheme.onSurface,
+                                      ),
+                                    ),
+                                    trailing: Icon(
+                                      Icons.arrow_forward_rounded,
+                                      size: 17.r,
+                                      color: scheme.onSurface.withValues(
+                                        alpha: 0.28,
+                                      ),
+                                    ),
+                                    onTap: () {
+                                      onSelected(filtered[index]);
+                                      Navigator.pop(context);
+                                    },
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -1359,53 +1760,106 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
   }
 
   // --------------------------------------------------
+
   // REUSABLE UI
+
   // --------------------------------------------------
 
-  Widget _buildIntroCard({
+  Widget _buildHeroCard({
     required ColorScheme scheme,
     required IconData icon,
+    required String eyebrow,
     required String title,
     required String description,
   }) {
+    final gradientEnd = Color.lerp(scheme.primary, scheme.secondary, 0.27)!;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      width: double.infinity,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: scheme.primary.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: scheme.primary.withValues(alpha: 0.12)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: scheme.primary.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: scheme.primary, size: 22),
+        borderRadius: BorderRadius.circular(27.r),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [scheme.primary, gradientEnd],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.primary.withValues(alpha: 0.20),
+            blurRadius: 25.r,
+            offset: Offset(0, 9.h),
           ),
-          const SizedBox(width: 12),
-          Expanded(
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -55.r,
+            right: -40.r,
+            child: Container(
+              width: 160.r,
+              height: 160.r,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.07),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 20.w,
+            bottom: -30.h,
+            child: Icon(
+              icon,
+              size: 110.r,
+              color: Colors.white.withValues(alpha: 0.055),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.all(20.r),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 10.w,
+                    vertical: 6.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(30.r),
+                  ),
+                  child: Text(
+                    eyebrow,
+                    style: TextStyle(
+                      fontSize: 9.5.sp,
+                      letterSpacing: 0.8,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 18.h),
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: scheme.onSurface,
+                    fontSize: 22.sp,
+                    height: 1.18,
+                    letterSpacing: -0.4,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  description,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    height: 1.45,
-                    color: scheme.onSurface.withValues(alpha: 0.6),
+                SizedBox(height: 8.h),
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: 285.w),
+                  child: Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 11.8.sp,
+                      height: 1.45,
+                      color: Colors.white.withValues(alpha: 0.82),
+                    ),
                   ),
                 ),
               ],
@@ -1413,6 +1867,37 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSectionTitle({
+    required String title,
+    required String subtitle,
+    required ColorScheme scheme,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 17.sp,
+            height: 1.15,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.2,
+            color: scheme.onSurface,
+          ),
+        ),
+        SizedBox(height: 4.h),
+        Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 11.3.sp,
+            height: 1.4,
+            color: scheme.onSurface.withValues(alpha: 0.50),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1425,7 +1910,7 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
       text: TextSpan(
         text: title,
         style: TextStyle(
-          fontSize: 14,
+          fontSize: 12.sp,
           fontWeight: FontWeight.w600,
           color: scheme.onSurface,
         ),
@@ -1445,41 +1930,64 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
     required IconData icon,
     required bool isSet,
     required ColorScheme scheme,
+    required bool isDark,
     VoidCallback? onTap,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        decoration: _cardDecoration(scheme),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: isSet
-                  ? scheme.primary
-                  : scheme.onSurface.withValues(alpha: 0.4),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                text,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: isSet ? FontWeight.w600 : FontWeight.normal,
+    final enabled = onTap != null;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(17.r),
+        child: Ink(
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
+          decoration: _modernCardDecoration(scheme, isDark),
+          child: Row(
+            children: [
+              Container(
+                width: 38.r,
+                height: 38.r,
+                decoration: BoxDecoration(
                   color: isSet
-                      ? scheme.onSurface
-                      : scheme.onSurface.withValues(alpha: 0.45),
+                      ? scheme.primary.withValues(alpha: 0.09)
+                      : scheme.onSurface.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                child: Icon(
+                  icon,
+                  size: 19.r,
+                  color: !enabled
+                      ? scheme.onSurface.withValues(alpha: 0.25)
+                      : isSet
+                      ? scheme.primary
+                      : scheme.onSurface.withValues(alpha: 0.42),
                 ),
               ),
-            ),
-            Icon(
-              Icons.keyboard_arrow_down_rounded,
-              color: scheme.onSurface.withValues(alpha: 0.4),
-            ),
-          ],
+              SizedBox(width: 11.w),
+              Expanded(
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    fontSize: 12.5.sp,
+                    fontWeight: isSet ? FontWeight.w600 : FontWeight.w400,
+                    color: !enabled
+                        ? scheme.onSurface.withValues(alpha: 0.30)
+                        : isSet
+                        ? scheme.onSurface
+                        : scheme.onSurface.withValues(alpha: 0.44),
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 20.r,
+                color: scheme.onSurface.withValues(
+                  alpha: enabled ? 0.35 : 0.18,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1488,6 +1996,7 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
   Widget _buildTextField({
     required TextEditingController controller,
     required ColorScheme scheme,
+    required bool isDark,
     required String hint,
     IconData? icon,
     int maxLines = 1,
@@ -1495,39 +2004,49 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
     return TextField(
       controller: controller,
       maxLines: maxLines,
-      style: TextStyle(color: scheme.onSurface, fontSize: 14),
-      decoration: _inputDecoration(scheme, hint: hint, icon: icon),
+      cursorColor: scheme.primary,
+      style: TextStyle(
+        color: scheme.onSurface,
+        fontSize: 12.5.sp,
+        fontWeight: FontWeight.w500,
+      ),
+      decoration: _inputDecoration(scheme, isDark, hint: hint, icon: icon),
     );
   }
 
   InputDecoration _inputDecoration(
-    ColorScheme scheme, {
+    ColorScheme scheme,
+    bool isDark, {
     required String hint,
     IconData? icon,
   }) {
     return InputDecoration(
       hintText: hint,
-      prefixIcon: icon == null ? null : Icon(icon, size: 20),
+      prefixIcon: icon == null
+          ? null
+          : Icon(icon, size: 19.r, color: scheme.primary),
       hintStyle: TextStyle(
-        color: scheme.onSurface.withValues(alpha: 0.4),
-        fontSize: 13,
+        color: scheme.onSurface.withValues(alpha: 0.38),
+        fontSize: 11.8.sp,
       ),
       filled: true,
-      fillColor: scheme.surfaceContainerLow,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      fillColor: scheme.surface,
+      contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 15.h),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide.none,
+        borderRadius: BorderRadius.circular(17.r),
+        borderSide: BorderSide(
+          color: scheme.onSurface.withValues(alpha: isDark ? 0.09 : 0.055),
+        ),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(17.r),
         borderSide: BorderSide(
-          color: scheme.outlineVariant.withValues(alpha: 0.4),
+          color: scheme.onSurface.withValues(alpha: isDark ? 0.09 : 0.055),
         ),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: scheme.primary, width: 1.4),
+        borderRadius: BorderRadius.circular(17.r),
+        borderSide: BorderSide(color: scheme.primary, width: 1.3.r),
       ),
     );
   }
@@ -1540,58 +2059,74 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
   }) {
     return SizedBox(
       width: double.infinity,
-      height: 54,
+      height: 52.h,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
+          elevation: 0,
           backgroundColor: scheme.primary,
           foregroundColor: scheme.onPrimary,
-          disabledBackgroundColor: scheme.primary.withValues(alpha: 0.5),
-          elevation: 0,
+          disabledBackgroundColor: scheme.primary.withValues(alpha: 0.45),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16.r),
           ),
         ),
         child: isLoading
             ? SizedBox(
-                width: 22,
-                height: 22,
+                width: 21.r,
+                height: 21.r,
                 child: CircularProgressIndicator(
-                  strokeWidth: 2,
+                  strokeWidth: 2.r,
                   color: scheme.onPrimary,
                 ),
               )
-            : Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(width: 7.w),
+                  Icon(Icons.arrow_forward_rounded, size: 18.r),
+                ],
               ),
       ),
     );
   }
 
   Widget _buildEmptyCard(
-    ColorScheme scheme, {
+    ColorScheme scheme,
+    bool isDark, {
     required IconData icon,
     required String text,
   }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(22),
-      decoration: _cardDecoration(scheme),
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
+      decoration: _modernCardDecoration(scheme, isDark),
       child: Column(
         children: [
-          Icon(icon, size: 30, color: scheme.onSurface.withValues(alpha: 0.4)),
-          const SizedBox(height: 10),
+          Container(
+            width: 52.r,
+            height: 52.r,
+            decoration: BoxDecoration(
+              color: scheme.primary.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 25.r, color: scheme.primary),
+          ),
+          SizedBox(height: 12.h),
           Text(
             text,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 13,
-              height: 1.4,
-              color: scheme.onSurface.withValues(alpha: 0.55),
+              fontSize: 11.8.sp,
+              height: 1.45,
+              color: scheme.onSurface.withValues(alpha: 0.56),
             ),
           ),
         ],
@@ -1599,42 +2134,78 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
     );
   }
 
-  BoxDecoration _cardDecoration(ColorScheme scheme) {
+  BoxDecoration _modernCardDecoration(ColorScheme scheme, bool isDark) {
     return BoxDecoration(
-      color: scheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.4)),
+      color: scheme.surface,
+      borderRadius: BorderRadius.circular(17.r),
+      border: Border.all(
+        color: scheme.onSurface.withValues(alpha: isDark ? 0.09 : 0.055),
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: isDark ? 0.05 : 0.02),
+          blurRadius: 12.r,
+          offset: Offset(0, 4.h),
+        ),
+      ],
     );
   }
 
   Widget _buildContactFooter(ColorScheme scheme) {
-    return Center(
-      child: Text.rich(
-        TextSpan(
-          text: 'Need help with your request? Contact ',
-          style: TextStyle(
-            fontSize: 12,
-            color: scheme.onSurface.withValues(alpha: 0.6),
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(15.r),
+      decoration: BoxDecoration(
+        color: scheme.primary.withValues(alpha: 0.055),
+        borderRadius: BorderRadius.circular(18.r),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36.r,
+            height: 36.r,
+            decoration: BoxDecoration(
+              color: scheme.primary.withValues(alpha: 0.10),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.support_agent_rounded,
+              size: 19.r,
+              color: scheme.primary,
+            ),
           ),
-          children: [
-            TextSpan(
-              text: '02013300300',
-              style: TextStyle(
-                color: scheme.primary,
-                fontWeight: FontWeight.bold,
+          SizedBox(width: 11.w),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                text: 'Need help with your request?\n',
+                style: TextStyle(
+                  fontSize: 10.8.sp,
+                  height: 1.45,
+                  color: scheme.onSurface.withValues(alpha: 0.55),
+                ),
+                children: [
+                  TextSpan(
+                    text: '02013300300',
+                    style: TextStyle(
+                      color: scheme.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const TextSpan(text: '  •  '),
+                  TextSpan(
+                    text: 'pbm@oceanichealthng.com',
+                    style: TextStyle(
+                      color: scheme.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const TextSpan(text: ' or email '),
-            TextSpan(
-              text: 'pbm@oceanichealthng.com',
-              style: TextStyle(
-                color: scheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
@@ -1648,6 +2219,7 @@ class _MedicalRequestState extends ConsumerState<MedicalRequest> {
 
 class _RefillMedicationDraft {
   int quantity;
+
   String dosage;
 
   _RefillMedicationDraft({this.quantity = 1, this.dosage = ''});

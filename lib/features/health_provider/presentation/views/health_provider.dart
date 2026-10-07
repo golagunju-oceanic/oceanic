@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+
 import 'package:oceanic/features/health_provider/presentation/provider/provider_provider.dart';
 import 'package:oceanic/features/health_provider/presentation/state/provider_state.dart';
 import 'package:oceanic/features/policy/presentation/provider/policy_provider.dart';
 import 'package:oceanic/presentation/widgets/drawer.dart';
-import 'package:oceanic/presentation/widgets/floating_app_bar.dart';
 
 class HealthProvider extends ConsumerStatefulWidget {
   const HealthProvider({super.key});
@@ -15,11 +16,11 @@ class HealthProvider extends ConsumerStatefulWidget {
 
 class _HealthProviderState extends ConsumerState<HealthProvider> {
   final TextEditingController _searchController = TextEditingController();
+
   final ScrollController _scrollController = ScrollController();
+
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  bool _showOutsideNetwork = false;
-  bool _filterMyPlanOnly = true; // Default to filtering by active user plan
   String? _selectedPlanVariant;
   String? _selectedTier;
 
@@ -32,10 +33,19 @@ class _HealthProviderState extends ConsumerState<HealthProvider> {
     'All Plans',
   ];
 
+  final List<String> _tiers = [
+    'All Tiers',
+    'Tier 1',
+    'Tier 2',
+    'Tier 3',
+    'Tier 4',
+  ];
+
   @override
   void dispose() {
     _searchController.dispose();
     _scrollController.dispose();
+
     super.dispose();
   }
 
@@ -43,246 +53,513 @@ class _HealthProviderState extends ConsumerState<HealthProvider> {
     ref.read(providerNotifierProvider.notifier).search(value);
   }
 
-  // Check if provider is covered under member's plan variant
-  bool _isCoveredUnderPlan(String? providerAddress, String? activePlan) {
-    if (activePlan == null) return true;
-    // Providers in network match active plan tiers
-    return true;
+  void _clearSearch() {
+    _searchController.clear();
+
+    ref.read(providerNotifierProvider.notifier).search('');
+
+    setState(() {});
   }
 
-  void _openFilter(String activePlan) {
-    final scheme = Theme.of(context).colorScheme;
+  // ============================================================
+  // FILTER
+  // ============================================================
+
+  void _openFilter({required String activePlan}) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    String tempPlan = _selectedPlanVariant ?? 'My Active Plan';
+
+    String tempTier = _selectedTier ?? 'All Tiers';
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: scheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => StatefulBuilder(
-        builder: (context, setModalState) {
-          return Padding(
-            padding: EdgeInsets.fromLTRB(
-              24,
-              24,
-              24,
-              MediaQuery.of(context).viewInsets.bottom + 24,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Filter Providers',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: scheme.onSurface,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              width: double.infinity,
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.82,
+              ),
+              decoration: BoxDecoration(
+                color: scheme.surface,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+              ),
+              child: SafeArea(
+                top: false,
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 24.h),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 42.w,
+                          height: 4.h,
+                          decoration: BoxDecoration(
+                            color: scheme.onSurface.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(30.r),
+                          ),
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
 
-                // PLAN VARIANT SECTION
-                Text(
-                  'Filter by Plan Variant',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: scheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _planVariants.map((variant) {
-                    final isSelected =
-                        (_selectedPlanVariant ?? 'My Active Plan') == variant;
-                    return ChoiceChip(
-                      label: Text(
-                        variant == 'My Active Plan'
-                            ? 'My Plan ($activePlan)'
-                            : variant,
+                      SizedBox(height: 20.h),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Filter Providers',
+                                  style: TextStyle(
+                                    fontSize: 19.sp,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -0.3,
+                                    color: scheme.onSurface,
+                                  ),
+                                ),
+
+                                SizedBox(height: 4.h),
+
+                                Text(
+                                  'Refine the provider directory',
+                                  style: TextStyle(
+                                    fontSize: 11.5.sp,
+                                    color: scheme.onSurface.withValues(
+                                      alpha: 0.50,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          IconButton(
+                            onPressed: () {
+                              Navigator.pop(sheetContext);
+                            },
+                            icon: Icon(Icons.close_rounded, size: 21.r),
+                          ),
+                        ],
                       ),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        setModalState(() {
-                          _selectedPlanVariant = selected
-                              ? variant
-                              : 'My Active Plan';
-                        });
-                        setState(() {});
-                      },
-                      selectedColor: scheme.primary,
-                      labelStyle: TextStyle(
-                        color: isSelected
-                            ? scheme.onPrimary
-                            : scheme.onSurface.withValues(alpha: 0.8),
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
+
+                      SizedBox(height: 24.h),
+
+                      // ========================================
+                      // PLAN
+                      // ========================================
+                      _buildFilterSectionTitle(
+                        title: 'Plan Variant',
+                        subtitle: 'Your active plan is $activePlan',
+                        scheme: scheme,
                       ),
-                    );
-                  }).toList(),
-                ),
 
-                const SizedBox(height: 20),
+                      SizedBox(height: 12.h),
 
-                // NETWORK TIER SECTION
-                Text(
-                  'Provider Network Tier',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: scheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  children:
-                      ['All Tiers', 'Tier 1', 'Tier 2', 'Tier 3', 'Tier 4'].map(
-                        (tier) {
-                          final isSelected =
-                              (_selectedTier ?? 'All Tiers') == tier;
+                      Wrap(
+                        spacing: 8.w,
+                        runSpacing: 9.h,
+                        children: _planVariants.map((variant) {
+                          final selected = tempPlan == variant;
+
+                          final label = variant == 'My Active Plan'
+                              ? 'My Plan ($activePlan)'
+                              : variant;
+
                           return ChoiceChip(
-                            label: Text(tier),
-                            selected: isSelected,
-                            onSelected: (selected) {
+                            label: Text(label),
+                            selected: selected,
+                            showCheckmark: false,
+                            onSelected: (_) {
                               setModalState(() {
-                                _selectedTier = selected ? tier : 'All Tiers';
+                                tempPlan = variant;
                               });
-                              setState(() {});
                             },
                             selectedColor: scheme.primary,
+                            backgroundColor: scheme.surface,
+                            side: BorderSide(
+                              color: selected
+                                  ? scheme.primary
+                                  : scheme.onSurface.withValues(
+                                      alpha: isDark ? 0.10 : 0.06,
+                                    ),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30.r),
+                            ),
                             labelStyle: TextStyle(
-                              color: isSelected
+                              fontSize: 10.8.sp,
+                              fontWeight: selected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: selected
                                   ? scheme.onPrimary
-                                  : scheme.onSurface.withValues(alpha: 0.8),
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
+                                  : scheme.onSurface.withValues(alpha: 0.68),
                             ),
                           );
-                        },
-                      ).toList(),
-                ),
-
-                const SizedBox(height: 24),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () {
-                          setModalState(() {
-                            _selectedTier = 'All Tiers';
-                            _selectedPlanVariant = 'My Active Plan';
-                            _filterMyPlanOnly = true;
-                          });
-                          setState(() {
-                            _selectedTier = 'All Tiers';
-                            _selectedPlanVariant = 'My Active Plan';
-                            _filterMyPlanOnly = true;
-                          });
-                          Navigator.pop(context);
-                        },
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: const Text('Reset'),
+                        }).toList(),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: scheme.primary,
-                          foregroundColor: scheme.onPrimary,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: const Text('Apply Filters'),
+
+                      SizedBox(height: 28.h),
+
+                      // ========================================
+                      // TIER
+                      // ========================================
+                      _buildFilterSectionTitle(
+                        title: 'Network Tier',
+                        subtitle: 'Choose a preferred provider tier',
+                        scheme: scheme,
                       ),
-                    ),
-                  ],
+
+                      SizedBox(height: 12.h),
+
+                      Wrap(
+                        spacing: 8.w,
+                        runSpacing: 9.h,
+                        children: _tiers.map((tier) {
+                          final selected = tempTier == tier;
+
+                          return ChoiceChip(
+                            label: Text(tier),
+                            selected: selected,
+                            showCheckmark: false,
+                            onSelected: (_) {
+                              setModalState(() {
+                                tempTier = tier;
+                              });
+                            },
+                            selectedColor: scheme.primary,
+                            backgroundColor: scheme.surface,
+                            side: BorderSide(
+                              color: selected
+                                  ? scheme.primary
+                                  : scheme.onSurface.withValues(
+                                      alpha: isDark ? 0.10 : 0.06,
+                                    ),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30.r),
+                            ),
+                            labelStyle: TextStyle(
+                              fontSize: 10.8.sp,
+                              fontWeight: selected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: selected
+                                  ? scheme.onPrimary
+                                  : scheme.onSurface.withValues(alpha: 0.68),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+
+                      SizedBox(height: 30.h),
+
+                      // ========================================
+                      // BUTTONS
+                      // ========================================
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () {
+                                setModalState(() {
+                                  tempPlan = 'My Active Plan';
+
+                                  tempTier = 'All Tiers';
+                                });
+
+                                setState(() {
+                                  _selectedPlanVariant = 'My Active Plan';
+
+                                  _selectedTier = 'All Tiers';
+                                });
+
+                                Navigator.pop(sheetContext);
+                              },
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: Size(double.infinity, 50.h),
+                                side: BorderSide(
+                                  color: scheme.onSurface.withValues(
+                                    alpha: 0.12,
+                                  ),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15.r),
+                                ),
+                              ),
+                              child: Text(
+                                'Reset',
+                                style: TextStyle(
+                                  fontSize: 12.5.sp,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          SizedBox(width: 12.w),
+
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () {
+                                setState(() {
+                                  _selectedPlanVariant = tempPlan;
+
+                                  _selectedTier = tempTier;
+                                });
+
+                                Navigator.pop(sheetContext);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                elevation: 0,
+                                minimumSize: Size(double.infinity, 50.h),
+                                backgroundColor: scheme.primary,
+                                foregroundColor: scheme.onPrimary,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15.r),
+                                ),
+                              ),
+                              child: Text(
+                                'Apply',
+                                style: TextStyle(
+                                  fontSize: 12.5.sp,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
-          );
-        },
-      ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
+  
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final state = ref.watch(providerNotifierProvider);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    final providerState = ref.watch(providerNotifierProvider);
+
     final viewModel = ref.read(providerNotifierProvider.notifier);
 
-    // Watch Active User Policy & Plan
     final policyState = ref.watch(policyProvider);
+
     final activeUserPlan =
-        policyState.card?.planVariant.toUpperCase() ?? 'AQUA SINGLE';
+        policyState.card?.planVariant.trim().isNotEmpty == true
+        ? policyState.card!.planVariant.toUpperCase()
+        : 'PLAN NOT AVAILABLE';
 
     return Scaffold(
       key: _scaffoldKey,
       drawer: const CustomDrawer(),
-      backgroundColor: scheme.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
+        bottom: false,
         child: Stack(
           children: [
-            Column(
-              children: [
-                const SizedBox(height: 84), // Top margin for FloatingAppBar
+            // ==================================================
+            // BACKGROUND DECORATION
+            // ==================================================
+            Positioned(
+              top: -90.h,
+              right: -80.w,
+              child: Container(
+                width: 220.r,
+                height: 220.r,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: scheme.primary.withValues(alpha: isDark ? 0.10 : 0.04),
+                ),
+              ),
+            ),
 
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    children: [
-                      _buildSearchBar(scheme, activeUserPlan),
-                      const SizedBox(height: 10),
-                      _buildPlanFilterBanner(scheme, activeUserPlan),
-                      const SizedBox(height: 8),
-                      // _buildToggleCard(scheme),
-                    ],
+            Positioned(
+              top: 400.h,
+              left: -110.w,
+              child: Container(
+                width: 210.r,
+                height: 210.r,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: scheme.secondary.withValues(
+                    alpha: isDark ? 0.07 : 0.03,
                   ),
                 ),
+              ),
+            ),
 
-                const SizedBox(height: 12),
+            // ==================================================
+            // PAGE
+            // ==================================================
+            Column(
+              children: [
+                _buildTopBar(scheme: scheme, isDark: isDark),
 
                 Expanded(
                   child: RefreshIndicator.adaptive(
                     onRefresh: viewModel.refresh,
-                    child: _buildProviderList(scheme, state, activeUserPlan),
+                    child: CustomScrollView(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 560),
+                              child: Padding(
+                                padding: EdgeInsets.fromLTRB(
+                                  20.w,
+                                  8.h,
+                                  20.w,
+                                  100.h,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // =========================
+                                    // HERO
+                                    // =========================
+                                    _buildHeroCard(
+                                      activePlan: activeUserPlan,
+                                      providerCount: providerState
+                                          .filteredProviders
+                                          .length,
+                                      scheme: scheme,
+                                      isDark: isDark,
+                                    ),
+
+                                    SizedBox(height: 28.h),
+
+                                    // =========================
+                                    // DIRECTORY
+                                    // =========================
+                                    _buildSectionHeader(
+                                      title: 'Provider directory',
+                                      subtitle:
+                                          'Search hospitals, clinics and healthcare facilities',
+                                      scheme: scheme,
+                                    ),
+
+                                    SizedBox(height: 14.h),
+
+                                    // =========================
+                                    // SEARCH
+                                    // =========================
+                                    _buildSearchBar(
+                                      scheme: scheme,
+                                      isDark: isDark,
+                                      activePlan: activeUserPlan,
+                                    ),
+
+                                    SizedBox(height: 12.h),
+
+                                    // =========================
+                                    // PLAN
+                                    // =========================
+                                    _buildActivePlanCard(
+                                      scheme: scheme,
+                                      isDark: isDark,
+                                      activePlan: activeUserPlan,
+                                    ),
+
+                                    if (_hasSelectedFilters) ...[
+                                      SizedBox(height: 12.h),
+
+                                      _buildSelectedFilters(scheme: scheme),
+                                    ],
+
+                                    SizedBox(height: 24.h),
+
+                                    // =========================
+                                    // RESULT TITLE
+                                    // =========================
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            _searchController.text
+                                                    .trim()
+                                                    .isEmpty
+                                                ? 'Available providers'
+                                                : 'Search results',
+                                            style: TextStyle(
+                                              fontSize: 14.sp,
+                                              fontWeight: FontWeight.w700,
+                                              color: scheme.onSurface,
+                                            ),
+                                          ),
+                                        ),
+
+                                        if (!providerState.isLoading)
+                                          Container(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 9.w,
+                                              vertical: 5.h,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: scheme.primary.withValues(
+                                                alpha: 0.09,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(30.r),
+                                            ),
+                                            child: Text(
+                                              providerState
+                                                  .filteredProviders
+                                                  .length
+                                                  .toString(),
+                                              style: TextStyle(
+                                                fontSize: 10.sp,
+                                                fontWeight: FontWeight.w700,
+                                                color: scheme.primary,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+
+                                    SizedBox(height: 12.h),
+
+                                    // =========================
+                                    // PROVIDERS
+                                    // =========================
+                                    _buildProviderContent(
+                                      scheme: scheme,
+                                      isDark: isDark,
+                                      state: providerState,
+                                      activePlan: activeUserPlan,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
-            ),
-
-            // Floating AppBar with Drawer Trigger
-            FloatingAppBar(
-              scrollController: _scrollController,
-              text: "Health Providers",
-              onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
             ),
           ],
         ),
@@ -290,81 +567,542 @@ class _HealthProviderState extends ConsumerState<HealthProvider> {
     );
   }
 
-  // --- SEARCH BAR ---
-  Widget _buildSearchBar(ColorScheme scheme, String activePlan) {
-    return TextField(
-      controller: _searchController,
-      onChanged: _onSearchChanged,
-      style: TextStyle(color: scheme.onSurface, fontSize: 14),
-      decoration: InputDecoration(
-        hintText: 'Search hospital, clinic, or location...',
-        hintStyle: TextStyle(
-          color: scheme.onSurface.withValues(alpha: 0.4),
-          fontSize: 14,
-        ),
-        prefixIcon: Icon(
-          Icons.search_rounded,
-          color: scheme.onSurface.withValues(alpha: 0.5),
-          size: 22,
-        ),
-        suffixIcon: IconButton(
-          onPressed: () => _openFilter(activePlan),
-          icon: Icon(Icons.tune_rounded, color: scheme.primary, size: 22),
-        ),
-        filled: true,
-        fillColor: scheme.surfaceContainerLow ?? scheme.surfaceContainer,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: scheme.outlineVariant.withValues(alpha: 0.3),
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: scheme.primary, width: 1.5),
-        ),
-      ),
-    );
+  bool get _hasSelectedFilters {
+    final plan = _selectedPlanVariant ?? 'My Active Plan';
+
+    final tier = _selectedTier ?? 'All Tiers';
+
+    return plan != 'My Active Plan' || tier != 'All Tiers';
   }
 
-  // --- ACTIVE PLAN FILTER BANNER ---
-  Widget _buildPlanFilterBanner(ColorScheme scheme, String activePlan) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: scheme.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: scheme.primary.withValues(alpha: 0.25)),
-      ),
+  // ============================================================
+  // TOP BAR
+  // ============================================================
+
+  Widget _buildTopBar({required ColorScheme scheme, required bool isDark}) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
       child: Row(
         children: [
-          Icon(Icons.shield_rounded, color: scheme.primary, size: 20),
-          const SizedBox(width: 10),
+          _buildTopButton(
+            icon: Icons.arrow_back_rounded,
+            scheme: scheme,
+            isDark: isDark,
+            onTap: () {
+              Navigator.of(context).pop();
+            },
+          ),
+
+          SizedBox(width: 14.w),
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Active Coverage Plan',
+                  'Health Providers',
                   style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 20.sp,
+                    height: 1.1,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                    color: scheme.onSurface,
+                  ),
+                ),
+
+                SizedBox(height: 3.h),
+
+                Text(
+                  'Find care within your network',
+                  style: TextStyle(
+                    fontSize: 11.5.sp,
+                    fontWeight: FontWeight.w500,
+                    color: scheme.onSurface.withValues(alpha: 0.50),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          _buildTopButton(
+            icon: Icons.menu_rounded,
+            scheme: scheme,
+            isDark: isDark,
+            onTap: () {
+              _scaffoldKey.currentState?.openDrawer();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopButton({
+    required IconData icon,
+    required ColorScheme scheme,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(15.r),
+        child: Container(
+          width: 43.r,
+          height: 43.r,
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            borderRadius: BorderRadius.circular(15.r),
+            border: Border.all(
+              color: scheme.onSurface.withValues(alpha: isDark ? 0.09 : 0.055),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.08 : 0.035),
+                blurRadius: 12.r,
+                offset: Offset(0, 4.h),
+              ),
+            ],
+          ),
+          child: Icon(icon, size: 21.r, color: scheme.onSurface),
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // HERO CARD
+  // ============================================================
+
+  Widget _buildHeroCard({
+    required String activePlan,
+    required int providerCount,
+    required ColorScheme scheme,
+    required bool isDark,
+  }) {
+    final gradientEnd = Color.lerp(scheme.primary, scheme.secondary, 0.27)!;
+
+    return Container(
+      width: double.infinity,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28.r),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [scheme.primary, gradientEnd],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.primary.withValues(alpha: isDark ? 0.16 : 0.22),
+            blurRadius: 28.r,
+            offset: Offset(0, 10.h),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -55.r,
+            right: -45.r,
+            child: Container(
+              width: 170.r,
+              height: 170.r,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.07),
+              ),
+            ),
+          ),
+
+          Positioned(
+            right: 18.w,
+            bottom: -35.h,
+            child: Icon(
+              Icons.local_hospital_rounded,
+              size: 125.r,
+              color: Colors.white.withValues(alpha: 0.055),
+            ),
+          ),
+
+          Padding(
+            padding: EdgeInsets.all(20.r),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 48.r,
+                      height: 48.r,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(16.r),
+                      ),
+                      child: Icon(
+                        Icons.medical_services_outlined,
+                        size: 24.r,
+                        color: Colors.white,
+                      ),
+                    ),
+
+                    const Spacer(),
+
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 11.w,
+                        vertical: 7.h,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(30.r),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.shield_outlined,
+                            size: 14.r,
+                            color: Colors.white,
+                          ),
+
+                          SizedBox(width: 5.w),
+
+                          Text(
+                            'My Network',
+                            style: TextStyle(
+                              fontSize: 10.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                SizedBox(height: 20.h),
+
+                Text(
+                  'Find the right care,\ncloser to you.',
+                  style: TextStyle(
+                    fontSize: 24.sp,
+                    height: 1.15,
+                    letterSpacing: -0.45,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+
+                SizedBox(height: 9.h),
+
+                Text(
+                  'Explore hospitals and healthcare facilities available through the Oceanic provider network.',
+                  style: TextStyle(
+                    fontSize: 11.8.sp,
+                    height: 1.45,
+                    color: Colors.white.withValues(alpha: 0.82),
+                  ),
+                ),
+
+                SizedBox(height: 20.h),
+
+                Container(
+                  padding: EdgeInsets.all(13.r),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.11),
+                    borderRadius: BorderRadius.circular(17.r),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 39.r,
+                        height: 39.r,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(13.r),
+                        ),
+                        child: Icon(
+                          Icons.verified_user_outlined,
+                          size: 19.r,
+                          color: Colors.white,
+                        ),
+                      ),
+
+                      SizedBox(width: 10.w),
+
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Active Plan',
+                              style: TextStyle(
+                                fontSize: 9.5.sp,
+                                color: Colors.white.withValues(alpha: 0.68),
+                              ),
+                            ),
+
+                            SizedBox(height: 3.h),
+
+                            Text(
+                              activePlan,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12.5.sp,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10.w,
+                          vertical: 6.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(30.r),
+                        ),
+                        child: Text(
+                          '$providerCount found',
+                          style: TextStyle(
+                            fontSize: 9.5.sp,
+                            fontWeight: FontWeight.w700,
+                            color: scheme.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // SECTION HEADER
+  // ============================================================
+
+  Widget _buildSectionHeader({
+    required String title,
+    required String subtitle,
+    required ColorScheme scheme,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 18.sp,
+            height: 1.15,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.25,
+            color: scheme.onSurface,
+          ),
+        ),
+
+        SizedBox(height: 4.h),
+
+        Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 11.8.sp,
+            height: 1.35,
+            color: scheme.onSurface.withValues(alpha: 0.52),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterSectionTitle({
+    required String title,
+    required String subtitle,
+    required ColorScheme scheme,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w700,
+            color: scheme.onSurface,
+          ),
+        ),
+
+        SizedBox(height: 3.h),
+
+        Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 10.5.sp,
+            color: scheme.onSurface.withValues(alpha: 0.48),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ============================================================
+  // SEARCH
+  // ============================================================
+
+  Widget _buildSearchBar({
+    required ColorScheme scheme,
+    required bool isDark,
+    required String activePlan,
+  }) {
+    return Container(
+      height: 52.h,
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(
+          color: scheme.onSurface.withValues(alpha: isDark ? 0.09 : 0.055),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.06 : 0.025),
+            blurRadius: 12.r,
+            offset: Offset(0, 4.h),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (value) {
+          _onSearchChanged(value);
+
+          setState(() {});
+        },
+        cursorColor: scheme.primary,
+        style: TextStyle(
+          fontSize: 12.5.sp,
+          fontWeight: FontWeight.w500,
+          color: scheme.onSurface,
+        ),
+        decoration: InputDecoration(
+          hintText: 'Search hospital, clinic or location',
+          hintStyle: TextStyle(
+            fontSize: 11.8.sp,
+            color: scheme.onSurface.withValues(alpha: 0.38),
+          ),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            size: 20.r,
+            color: scheme.onSurface.withValues(alpha: 0.43),
+          ),
+          suffixIcon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_searchController.text.isNotEmpty)
+                IconButton(
+                  onPressed: _clearSearch,
+                  icon: Icon(Icons.close_rounded, size: 18.r),
+                ),
+
+              IconButton(
+                onPressed: () {
+                  _openFilter(activePlan: activePlan);
+                },
+                icon: Container(
+                  width: 32.r,
+                  height: 32.r,
+                  decoration: BoxDecoration(
+                    color: scheme.primary.withValues(alpha: 0.09),
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  child: Icon(
+                    Icons.tune_rounded,
+                    size: 17.r,
                     color: scheme.primary,
                   ),
                 ),
+              ),
+            ],
+          ),
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(vertical: 16.h),
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // ACTIVE PLAN
+  // ============================================================
+
+  Widget _buildActivePlanCard({
+    required ColorScheme scheme,
+    required bool isDark,
+    required String activePlan,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 13.h),
+      decoration: BoxDecoration(
+        color: scheme.primary.withValues(alpha: isDark ? 0.10 : 0.055),
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(color: scheme.primary.withValues(alpha: 0.15)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40.r,
+            height: 40.r,
+            decoration: BoxDecoration(
+              color: scheme.primary.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(13.r),
+            ),
+            child: Icon(
+              Icons.shield_outlined,
+              color: scheme.primary,
+              size: 20.r,
+            ),
+          ),
+
+          SizedBox(width: 11.w),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Active coverage plan',
+                  style: TextStyle(
+                    fontSize: 10.sp,
+                    fontWeight: FontWeight.w500,
+                    color: scheme.onSurface.withValues(alpha: 0.50),
+                  ),
+                ),
+
+                SizedBox(height: 3.h),
+
                 Text(
                   activePlan,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 12.5.sp,
+                    fontWeight: FontWeight.w700,
                     color: scheme.onSurface,
                   ),
                 ),
@@ -372,267 +1110,395 @@ class _HealthProviderState extends ConsumerState<HealthProvider> {
             ),
           ),
 
-          // FilterChip(
-          //   label: Text(_filterMyPlanOnly ? 'My Plan Only' : 'All Providers'),
-          //   selected: _filterMyPlanOnly,
-          //   onSelected: (selected) {
-          //     setState(() => _filterMyPlanOnly = selected);
-          //   },
-          //   selectedColor: scheme.primary,
-          //   labelStyle: TextStyle(
-          //     fontSize: 11,
-          //     fontWeight: FontWeight.bold,
-          //     color: _filterMyPlanOnly
-          //         ? scheme.onPrimary
-          //         : scheme.onSurface.withValues(alpha: 0.8),
-          //   ),
-          // ),
+          Icon(Icons.verified_rounded, color: scheme.secondary, size: 20.r),
         ],
       ),
     );
   }
 
-  // --- NETWORK TOGGLE CARD ---
-  Widget _buildToggleCard(ColorScheme scheme) {
+  // ============================================================
+  // SELECTED FILTERS
+  // ============================================================
+
+  Widget _buildSelectedFilters({required ColorScheme scheme}) {
+    final plan = _selectedPlanVariant ?? 'My Active Plan';
+
+    final tier = _selectedTier ?? 'All Tiers';
+
+    return SizedBox(
+      height: 34.h,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          if (plan != 'My Active Plan')
+            _buildFilterPill(
+              label: plan,
+              scheme: scheme,
+              onRemove: () {
+                setState(() {
+                  _selectedPlanVariant = 'My Active Plan';
+                });
+              },
+            ),
+
+          if (plan != 'My Active Plan' && tier != 'All Tiers')
+            SizedBox(width: 8.w),
+
+          if (tier != 'All Tiers')
+            _buildFilterPill(
+              label: tier,
+              scheme: scheme,
+              onRemove: () {
+                setState(() {
+                  _selectedTier = 'All Tiers';
+                });
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterPill({
+    required String label,
+    required ColorScheme scheme,
+    required VoidCallback onRemove,
+  }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: EdgeInsets.only(left: 11.w, right: 5.w),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow ?? scheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.3)),
+        color: scheme.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(30.r),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Icon(Icons.hub_outlined, size: 18, color: scheme.primary),
-              const SizedBox(width: 8),
-              Text(
-                'Show outside network',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: scheme.onSurface.withValues(alpha: 0.8),
-                ),
-              ),
-            ],
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10.sp,
+              fontWeight: FontWeight.w600,
+              color: scheme.primary,
+            ),
           ),
-          Switch.adaptive(
-            value: _showOutsideNetwork,
-            onChanged: (v) => setState(() => _showOutsideNetwork = v),
-            activeColor: scheme.primary,
+
+          SizedBox(width: 3.w),
+
+          InkWell(
+            onTap: onRemove,
+            borderRadius: BorderRadius.circular(30.r),
+            child: Padding(
+              padding: EdgeInsets.all(6.r),
+              child: Icon(
+                Icons.close_rounded,
+                size: 14.r,
+                color: scheme.primary,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  // --- PROVIDER LIST WITH PLAN VARIANT BADGES ---
-  Widget _buildProviderList(
-    ColorScheme scheme,
-    ProviderState state,
-    String activePlan,
-  ) {
-    if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator.adaptive());
-    }
+  // ============================================================
+  // PROVIDER CONTENT
+  // ============================================================
 
-    if (state.filteredProviders.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: scheme.primary.withValues(alpha: 0.08),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.local_hospital_outlined,
-                  size: 48,
-                  color: scheme.primary,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                "No providers found for $activePlan",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: scheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                "Try enabling 'Show outside network' or searching a different area.",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: scheme.onSurface.withValues(alpha: 0.5),
-                ),
-              ),
-            ],
+  Widget _buildProviderContent({
+    required ColorScheme scheme,
+    required bool isDark,
+    required ProviderState state,
+    required String activePlan,
+  }) {
+    if (state.isLoading) {
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: 50.h),
+        child: Center(
+          child: CircularProgressIndicator.adaptive(
+            valueColor: AlwaysStoppedAnimation(scheme.primary),
           ),
         ),
       );
     }
 
+    if (state.filteredProviders.isEmpty) {
+      return _buildEmptyState(scheme: scheme, activePlan: activePlan);
+    }
+
     return ListView.separated(
-      controller: _scrollController,
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: state.filteredProviders.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (context, index) {
+        return SizedBox(height: 12.h);
+      },
       itemBuilder: (context, index) {
         final provider = state.filteredProviders[index];
-        final isCovered = _isCoveredUnderPlan(provider.address, activePlan);
 
-        return Container(
+        return _buildProviderCard(
+          providerName: provider.name,
+          address: provider.address,
+          city: provider.city,
+          activePlan: activePlan,
+          scheme: scheme,
+          isDark: isDark,
+        );
+      },
+    );
+  }
+
+  // ============================================================
+  // PROVIDER CARD
+  // ============================================================
+
+  Widget _buildProviderCard({
+    required String providerName,
+    required String? address,
+    required String? city,
+    required String activePlan,
+    required ColorScheme scheme,
+    required bool isDark,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          // Provider detail screen can be added here later.
+        },
+        borderRadius: BorderRadius.circular(22.r),
+        child: Ink(
+          padding: EdgeInsets.all(16.r),
           decoration: BoxDecoration(
-            color: scheme.surfaceContainerLow ?? scheme.surfaceContainer,
-            borderRadius: BorderRadius.circular(18),
+            color: scheme.surface,
+            borderRadius: BorderRadius.circular(22.r),
             border: Border.all(
-              color: scheme.outlineVariant.withValues(alpha: 0.3),
+              color: scheme.onSurface.withValues(alpha: isDark ? 0.08 : 0.05),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
+                color: Colors.black.withValues(alpha: isDark ? 0.07 : 0.03),
+                blurRadius: 15.r,
+                offset: Offset(0, 5.h),
               ),
             ],
           ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(18),
-              onTap: () {},
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 49.r,
+                height: 49.r,
+                decoration: BoxDecoration(
+                  color: scheme.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(16.r),
+                ),
+                child: Icon(
+                  Icons.local_hospital_rounded,
+                  color: scheme.primary,
+                  size: 23.r,
+                ),
+              ),
+
+              SizedBox(width: 12.w),
+
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: scheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Icon(
-                        Icons.local_hospital_rounded,
-                        color: scheme.primary,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  provider.name,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                    color: scheme.onSurface,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            providerName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13.5.sp,
+                              height: 1.25,
+                              fontWeight: FontWeight.w700,
+                              color: scheme.onSurface,
+                            ),
+                          ),
+                        ),
 
-                              // Plan Coverage Badge
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isCovered
-                                      ? const Color(
-                                          0xFF28A745,
-                                        ).withValues(alpha: 0.12)
-                                      : Colors.amber.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  isCovered ? activePlan : 'Requires Upgrade',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: isCovered
-                                        ? const Color(0xFF28A745)
-                                        : Colors.amber.shade800,
-                                  ),
+                        SizedBox(width: 8.w),
+
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8.w,
+                            vertical: 5.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: scheme.secondary.withValues(alpha: 0.10),
+                            borderRadius: BorderRadius.circular(30.r),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.verified_outlined,
+                                size: 11.r,
+                                color: scheme.secondary,
+                              ),
+
+                              SizedBox(width: 4.w),
+
+                              Text(
+                                'Network',
+                                style: TextStyle(
+                                  fontSize: 8.5.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: scheme.secondary,
                                 ),
                               ),
                             ],
                           ),
-                          if (provider.address != null &&
-                              provider.address!.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Icon(
-                                  Icons.location_on_outlined,
-                                  size: 14,
-                                  color: scheme.onSurface.withValues(
-                                    alpha: 0.5,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    provider.address!,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: scheme.onSurface.withValues(
-                                        alpha: 0.6,
-                                      ),
-                                      fontSize: 12,
-                                      height: 1.3,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                          if (provider.city != null &&
-                              provider.city!.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              provider.city!,
+                        ),
+                      ],
+                    ),
+
+                    if (address != null && address.trim().isNotEmpty) ...[
+                      SizedBox(height: 8.h),
+
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.location_on_outlined,
+                            size: 14.r,
+                            color: scheme.onSurface.withValues(alpha: 0.40),
+                          ),
+
+                          SizedBox(width: 5.w),
+
+                          Expanded(
+                            child: Text(
+                              address,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: scheme.primary,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
+                                fontSize: 10.8.sp,
+                                height: 1.35,
+                                color: scheme.onSurface.withValues(alpha: 0.53),
                               ),
                             ),
-                          ],
+                          ),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: scheme.onSurface.withValues(alpha: 0.3),
-                    ),
+                    ],
+
+                    if (city != null && city.trim().isNotEmpty) ...[
+                      SizedBox(height: 7.h),
+
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8.w,
+                          vertical: 5.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: scheme.primary.withValues(alpha: 0.07),
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                        child: Text(
+                          city,
+                          style: TextStyle(
+                            fontSize: 9.5.sp,
+                            fontWeight: FontWeight.w600,
+                            color: scheme.primary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
+
+              SizedBox(width: 5.w),
+
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 20.r,
+                color: scheme.onSurface.withValues(alpha: 0.25),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // EMPTY
+  // ============================================================
+
+  Widget _buildEmptyState({
+    required ColorScheme scheme,
+    required String activePlan,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 40.h),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(22.r),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 64.r,
+            height: 64.r,
+            decoration: BoxDecoration(
+              color: scheme.primary.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.local_hospital_outlined,
+              size: 29.r,
+              color: scheme.primary,
             ),
           ),
-        );
-      },
+
+          SizedBox(height: 16.h),
+
+          Text(
+            'No providers found',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 15.sp,
+              fontWeight: FontWeight.w700,
+              color: scheme.onSurface,
+            ),
+          ),
+
+          SizedBox(height: 6.h),
+
+          Text(
+            _searchController.text.trim().isNotEmpty
+                ? 'Try a different hospital, clinic or location.'
+                : 'No provider results are currently available for $activePlan.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11.5.sp,
+              height: 1.45,
+              color: scheme.onSurface.withValues(alpha: 0.52),
+            ),
+          ),
+
+          if (_searchController.text.trim().isNotEmpty) ...[
+            SizedBox(height: 16.h),
+
+            TextButton(
+              onPressed: _clearSearch,
+              child: Text(
+                'Clear search',
+                style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

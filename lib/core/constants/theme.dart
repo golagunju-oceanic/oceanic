@@ -25,7 +25,7 @@ ThemeData lightTheme() => ThemeData(
   cardColor: kLightSurface,
   dividerColor: kLightDivider,
   textTheme: Typography.englishLike2018.apply(
-    fontSizeFactor: 1.sp,
+    // fontSizeFactor: 1.sp,
     bodyColor: kLightTextPrimary,
     displayColor: kLightTextPrimary,
   ),
@@ -59,7 +59,7 @@ ThemeData darkTheme() => ThemeData(
   cardColor: kDarkSurface,
   dividerColor: kDarkDivider,
   textTheme: Typography.englishLike2018.apply(
-    fontSizeFactor: 1.sp,
+    // fontSizeFactor: 1.sp,
     bodyColor: kDarkTextPrimary,
     displayColor: kDarkTextPrimary,
   ),
