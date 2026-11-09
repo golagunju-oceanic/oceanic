@@ -5,10 +5,7 @@ class ApiClient {
 
   final Dio _dio;
 
-  Future<Response> get(
-    String path, {
-    Map<String, dynamic>? queryParameters,
-  }) {
+  Future<Response> get(String path, {Map<String, dynamic>? queryParameters}) {
     return _dio.get(path, queryParameters: queryParameters);
   }
 
@@ -42,5 +39,9 @@ class ApiClient {
       data: body,
       options: Options(contentType: Headers.multipartFormDataContentType),
     );
+  }
+
+  Future<Response> deleteWithBody(String path, {dynamic body}) {
+    return _dio.delete(path, data: body);
   }
 }

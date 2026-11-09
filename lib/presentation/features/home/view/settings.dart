@@ -1,21 +1,31 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:oceanic/features/auth/presentations/provider/auth_provider.dart';
+import 'package:oceanic/features/notifications/domain/entities/notification_preferences.dart';
+import 'package:oceanic/features/notifications/presentation/providers/notification_preferences_provider.dart';
 import 'package:oceanic/features/auth/presentations/screen/auth_screen.dart';
 import 'package:oceanic/presentation/features/home/view/Profile.dart';
 import 'package:oceanic/presentation/features/home/view/delete_profile.dart';
 import 'package:oceanic/presentation/widgets/drawer.dart';
 import 'package:oceanic/presentation/widgets/floating_app_bar.dart';
 
-class SettingsPage extends StatefulWidget {
+class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
 
   @override
-  State<SettingsPage> createState() => _SettingsPageState();
+  ConsumerState<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> {
-  // Settings Toggles State
-  bool _pushNotifications = true;
+class _SettingsPageState extends ConsumerState<SettingsPage> {
+  // The two health-notification switches are stored on the backend.
+  NotificationPreferences? _preferences;
+  bool _preferencesLoading = true;
+  bool _preferencesSaving = false;
+  String? _preferencesError;
+  bool _loggingOut = false;
+
+  // Existing local-only UI controls; no backend endpoint was provided for these.
   bool _smsClaimAlerts = true;
   bool _biometricsEnabled = false;
 
@@ -32,10 +42,86 @@ class _SettingsPageState extends State<SettingsPage> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadNotificationPreferences();
+    });
+  }
+
+  Future<void> _loadNotificationPreferences() async {
+    final role = ref.read(authProvider).user?.role.toLowerCase();
+    if (role != 'member') {
+      setState(() {
+        _preferencesLoading = false;
+        _preferencesError =
+            'Health notification preferences are available to enrollees only.';
+      });
+      return;
+    }
+
+    setState(() {
+      _preferencesLoading = true;
+      _preferencesError = null;
+    });
+
+    try {
+      final data = await ref
+          .read(notificationPreferencesRepositoryProvider)
+          .getPreferences();
+      if (!mounted) return;
+      setState(() {
+        _preferences = data;
+        _preferencesLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _preferencesLoading = false;
+        _preferencesError = 'Unable to load notification preferences.';
+      });
+    }
+  }
+
+  Future<void> _saveNotificationPreferences({
+    bool? dailyHealthTips,
+    bool? weeklyWellnessReminders,
+  }) async {
+    if (_preferencesLoading || _preferencesSaving || _preferences == null) {
+      return;
+    }
+
+    setState(() => _preferencesSaving = true);
+    try {
+      final updated = await ref
+          .read(notificationPreferencesRepositoryProvider)
+          .updatePreferences(
+            dailyHealthTips: dailyHealthTips,
+            weeklyWellnessReminders: weeklyWellnessReminders,
+          );
+      if (!mounted) return;
+      setState(() => _preferences = updated);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not save notification preferences. Try again.'),
+        ),
+      );
+      // Existing switch values are retained when the API fails.
+    } finally {
+      if (mounted) setState(() => _preferencesSaving = false);
+    }
+  }
+
+  @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
   }
+
+  bool get _canEditNotificationPreferences =>
+      _preferences != null && !_preferencesLoading && !_preferencesSaving;
 
   @override
   Widget build(BuildContext context) {
@@ -114,20 +200,83 @@ class _SettingsPageState extends State<SettingsPage> {
 
                 const SizedBox(height: 24),
 
-                // --- NOTIFICATIONS & SECURITY ---
+                // --- HEALTH NOTIFICATIONS & SECURITY ---
                 const _SectionLabel('Security & Notifications'),
                 const SizedBox(height: 8),
                 _SettingsCard(
                   children: [
+                    if (_preferencesLoading || _preferencesSaving)
+                      const LinearProgressIndicator(minHeight: 2),
+                    if (_preferencesError != null) ...[
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _preferencesError!,
+                                style: TextStyle(
+                                  color: scheme.error,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: _preferencesLoading
+                                  ? null
+                                  : _loadNotificationPreferences,
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const _Divider(),
+                    ],
                     _ToggleTile(
                       icon: CupertinoIcons.bell_fill,
                       iconBg: primaryBg,
                       iconColor: scheme.primary,
-                      label: 'Push Notifications',
-                      subtitle: 'App updates & reminders',
-                      value: _pushNotifications,
+                      label: 'Health Notifications',
+                      subtitle:
+                          'Enable both health tips and wellness reminders',
+                      value: _preferences?.healthNotificationsEnabled ?? false,
                       activeColor: scheme.primary,
-                      onChanged: (v) => setState(() => _pushNotifications = v),
+                      onChanged: _canEditNotificationPreferences
+                          ? (value) => _saveNotificationPreferences(
+                              dailyHealthTips: value,
+                              weeklyWellnessReminders: value,
+                            )
+                          : null,
+                    ),
+                    const _Divider(),
+                    _ToggleTile(
+                      icon: CupertinoIcons.heart_fill,
+                      iconBg: primaryBg,
+                      iconColor: scheme.primary,
+                      label: 'Daily Health Tips',
+                      subtitle: 'Receive daily health and wellness tips',
+                      value: _preferences?.dailyHealthTips ?? false,
+                      activeColor: scheme.primary,
+                      onChanged: _canEditNotificationPreferences
+                          ? (value) => _saveNotificationPreferences(
+                              dailyHealthTips: value,
+                            )
+                          : null,
+                    ),
+                    const _Divider(),
+                    _ToggleTile(
+                      icon: CupertinoIcons.calendar,
+                      iconBg: primaryBg,
+                      iconColor: scheme.primary,
+                      label: 'Weekly Wellness Reminders',
+                      subtitle: 'Get your weekly fitness and wellness updates',
+                      value: _preferences?.weeklyWellnessReminders ?? false,
+                      activeColor: scheme.primary,
+                      onChanged: _canEditNotificationPreferences
+                          ? (value) => _saveNotificationPreferences(
+                              weeklyWellnessReminders: value,
+                            )
+                          : null,
                     ),
                     const _Divider(),
                     _ToggleTile(
@@ -458,14 +607,31 @@ class _SettingsPageState extends State<SettingsPage> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            onPressed: () {
-              Navigator.pop(dialogContext); // Close Dialog
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const AuthScreen()),
-                (route) => false, // Remove all previous screens
-              );
-            },
+            onPressed: _loggingOut
+                ? null
+                : () async {
+                    Navigator.of(dialogContext).pop();
+                    if (!mounted) return;
+                    setState(() => _loggingOut = true);
+                    try {
+                      // Removes the backend FCM device before clearing JWT.
+                      await ref.read(authProvider.notifier).logout();
+                      if (!mounted) return;
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (_) => const AuthScreen()),
+                        (_) => false,
+                      );
+                    } catch (_) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Unable to log out. Please try again.'),
+                        ),
+                      );
+                    } finally {
+                      if (mounted) setState(() => _loggingOut = false);
+                    }
+                  },
             child: const Text('Logout'),
           ),
         ],
@@ -509,7 +675,7 @@ class _SettingsCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow ?? scheme.surfaceContainer,
+        color: scheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.3)),
       ),
@@ -595,7 +761,7 @@ class _ToggleTile extends StatelessWidget {
   final String? subtitle;
   final bool value;
   final Color activeColor;
-  final ValueChanged<bool> onChanged;
+  final ValueChanged<bool>? onChanged;
 
   const _ToggleTile({
     required this.icon,
@@ -605,7 +771,7 @@ class _ToggleTile extends StatelessWidget {
     this.subtitle,
     required this.value,
     required this.activeColor,
-    required this.onChanged,
+    this.onChanged,
   });
 
   @override

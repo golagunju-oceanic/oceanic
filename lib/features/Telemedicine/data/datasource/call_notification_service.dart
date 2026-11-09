@@ -1,61 +1,69 @@
 import 'package:flutter/material.dart';
-import 'package:oceanic/features/Telemedicine/presentation/view/imacoming_call_dialog.dart';
-import 'package:socket_io_client/socket_io_client.dart' as IO;
-
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:oceanic/features/Telemedicine/presentation/provider/telemedicine_provider.dart';
+import 'package:oceanic/features/Telemedicine/presentation/screens/incoming_call_screen%20(1)%20(3).dart';
+import 'package:oceanic/features/Telemedicine/presentation/viewmodel/telemedicine_viewmodel.dart';
+import 'package:socket_io_client/socket_io_client.dart' as io;
 
 class CallNotificationService {
-  static IO.Socket? _socket;
+  static io.Socket? _socket;
 
-  /// Initialize socket when Doctor logs in
   static void initDoctorSocket({
-    required String baseUrl, // e.g. "http://10.0.2.2:5000" for Android emulator
-    required int doctorId,
+    required String baseUrl,
+    required dynamic doctorId,
     required GlobalKey<NavigatorState> navigatorKey,
   }) {
     if (_socket != null && _socket!.connected) return;
 
-    _socket = IO.io(
-      baseUrl,
-      IO.OptionBuilder()
+    final uri = baseUrl.replaceAll(RegExp(r'/+$'), '');
+
+    _socket = io.io(
+      uri,
+      io.OptionBuilder()
           .setTransports(['websocket'])
-          .disableAutoConnect()
+          .enableAutoConnect()
+          .enableReconnection()
           .build(),
     );
 
-    _socket!.connect();
-
     _socket!.onConnect((_) {
-      debugPrint("🔌 Doctor connected to WebSocket");
-      // Join doctor's specific notification room
-      _socket!.emit("join_doctor_room", doctorId);
+      debugPrint('Doctor socket connected. Joining room: doctor_$doctorId');
+      _socket!.emit('join', 'doctor_$doctorId');
     });
 
-    // Listen for incoming call event from backend
-    _socket!.on("incoming_call", (data) {
-      debugPrint("📞 Incoming Call Event received: $data");
+    _socket!.on('incoming_call', (data) {
+      debugPrint('Incoming consultation event received: $data');
 
       final context = navigatorKey.currentContext;
-      if (context == null) return;
+      if (context == null || data == null) return;
 
-      final channel = data['channel'] as String;
-      final callType = (data['callType'] ?? 'video') as String;
-      final caller = data['caller'] as Map<String, dynamic>?;
-      final callerName = caller?['name'] ?? "Enrollee";
+      final callId = data['callId']?.toString() ?? data['channel']?.toString();
+      final callType = data['callType']?.toString().toUpperCase() ?? 'VIDEO';
 
-      // Show incoming call dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => IncomingCallDialog(
-          channelName: channel,
-          callerName: callerName,
-          callType: callType,
-        ),
-      );
+      // 1. Read the ViewModel from Riverpod container using context
+      final container = ProviderScope.containerOf(context);
+      // NOTE: replace 'telemedicineProvider' with your provider variable name if named differently
+      final viewModel = container.read(telemedicineViewModelProvider);
+
+      if (callId != null) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => IncomingCallScreen(
+              viewModel: viewModel, // <-- Pass the required viewModel here
+              callId: callId,
+              isVideo: callType == 'VIDEO',
+            ),
+          ),
+        );
+      }
     });
 
     _socket!.onDisconnect((_) {
-      debugPrint("🔌 Doctor disconnected from WebSocket");
+      debugPrint('Doctor socket disconnected');
+    });
+
+    _socket!.onError((err) {
+      debugPrint('Doctor socket error: $err');
     });
   }
 

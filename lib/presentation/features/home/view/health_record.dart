@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
+import 'package:oceanic/features/healthrecords/presentation/provider/health_record_provider.dart';
 
 import 'package:oceanic/presentation/widgets/drawer.dart';
 
-class HealthRecord extends StatefulWidget {
+class HealthRecord extends ConsumerStatefulWidget {
   const HealthRecord({super.key});
 
   @override
-  State<HealthRecord> createState() => _HealthRecordState();
+  ConsumerState<HealthRecord> createState() => _HealthRecordState();
 }
 
-class _HealthRecordState extends State<HealthRecord> {
+class _HealthRecordState extends ConsumerState<HealthRecord> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final TextEditingController _searchController = TextEditingController();
@@ -36,64 +38,6 @@ class _HealthRecordState extends State<HealthRecord> {
   ];
 
   // ============================================================
-  // RECORDS
-  // CURRENTLY STATIC SAMPLE DATA
-  // ============================================================
-
-  final List<Map<String, dynamic>> _healthRecords = [
-    {
-      'id': 'REC-001',
-      'type': 'Consultation',
-      'title': 'General Checkup',
-      'hospital': "St. Mary's Hospital",
-      'doctor': 'Dr. John Doe',
-      'date': '2026-04-12',
-      'status': 'COMPLETED',
-      'notes': 'Routine annual medical checkup. Vital signs normal.',
-    },
-    {
-      'id': 'REC-002',
-      'type': 'Lab Test',
-      'title': 'Full Blood Count (FBC)',
-      'hospital': 'HealthLab Diagnostics',
-      'doctor': 'Dr. Alan Vance',
-      'date': '2026-04-10',
-      'status': 'COMPLETED',
-      'notes': 'Hemoglobin, WBC, and Platelet levels within optimal range.',
-    },
-    {
-      'id': 'REC-003',
-      'type': 'Imaging',
-      'title': 'Brain MRI Scan',
-      'hospital': 'City Imaging Clinic',
-      'doctor': 'Dr. Sarah Kim',
-      'date': '2026-04-05',
-      'status': 'COMPLETED',
-      'notes': 'No significant abnormalities detected in brain parenchyma.',
-    },
-    {
-      'id': 'REC-004',
-      'type': 'Prescription',
-      'title': 'Medication Refill',
-      'hospital': 'Wellness Pharmacy',
-      'doctor': 'Dr. Adams',
-      'date': '2026-03-28',
-      'status': 'ACTIVE',
-      'notes': '30-day refill for antihypertensive treatment.',
-    },
-    {
-      'id': 'REC-005',
-      'type': 'Surgery',
-      'title': 'Laparoscopic Appendectomy',
-      'hospital': 'City General Hospital',
-      'doctor': 'Dr. Michael Lee',
-      'date': '2026-03-15',
-      'status': 'COMPLETED',
-      'notes': 'Uncomplicated procedure. Post-operative recovery smooth.',
-    },
-  ];
-
-  // ============================================================
   // DISPOSE
   // ============================================================
 
@@ -107,13 +51,16 @@ class _HealthRecordState extends State<HealthRecord> {
   // FILTERING
   // ============================================================
 
-  List<Map<String, dynamic>> get _filteredRecords {
-    return _healthRecords.where((record) {
+  List<Map<String, dynamic>> _filterRecords(
+    List<Map<String, dynamic>> healthRecords,
+  ) {
+    return healthRecords.where((record) {
       // --------------------------------------------------------
       // CATEGORY
       // --------------------------------------------------------
 
-      if (_selectedCategory != 'All' && record['type'] != _selectedCategory) {
+      if (_selectedCategory != 'All' &&
+          record['type']?.toString() != _selectedCategory) {
         return false;
       }
 
@@ -124,15 +71,18 @@ class _HealthRecordState extends State<HealthRecord> {
       if (_searchQuery.trim().isNotEmpty) {
         final query = _searchQuery.toLowerCase().trim();
 
-        final title = (record['title'] as String? ?? '').toLowerCase();
+        final title = (record['title']?.toString() ?? '').toLowerCase();
 
-        final hospital = (record['hospital'] as String? ?? '').toLowerCase();
+        final hospital = (record['hospital']?.toString() ?? '').toLowerCase();
 
-        final doctor = (record['doctor'] as String? ?? '').toLowerCase();
+        final doctor = (record['doctor']?.toString() ?? '').toLowerCase();
+
+        final diagnosis = (record['diagnosis']?.toString() ?? '').toLowerCase();
 
         if (!title.contains(query) &&
             !hospital.contains(query) &&
-            !doctor.contains(query)) {
+            !doctor.contains(query) &&
+            !diagnosis.contains(query)) {
           return false;
         }
       }
@@ -142,7 +92,7 @@ class _HealthRecordState extends State<HealthRecord> {
       // --------------------------------------------------------
 
       if (_selectedDateRange != null) {
-        final recordDate = DateTime.tryParse(record['date'].toString());
+        final recordDate = DateTime.tryParse(record['date']?.toString() ?? '');
 
         if (recordDate == null) {
           return false;
@@ -187,7 +137,7 @@ class _HealthRecordState extends State<HealthRecord> {
 
     final DateTimeRange? picked = await showDateRangePicker(
       context: context,
-      firstDate: DateTime(2024),
+      firstDate: DateTime(2000),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       initialDateRange: _selectedDateRange,
       builder: (context, child) {
@@ -228,6 +178,10 @@ class _HealthRecordState extends State<HealthRecord> {
     return DateFormat('dd MMM yyyy').format(date);
   }
 
+  bool _hasValue(dynamic value) {
+    return value != null && value.toString().trim().isNotEmpty;
+  }
+
   // ============================================================
   // BUILD
   // ============================================================
@@ -238,7 +192,20 @@ class _HealthRecordState extends State<HealthRecord> {
     final scheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    final records = _filteredRecords;
+    // ==========================================================
+    // API DATA
+    // ==========================================================
+
+    final healthRecordsAsync = ref.watch(healthRecordsProvider);
+
+    final allRecords = healthRecordsAsync.maybeWhen(
+      data: (items) {
+        return items.map((record) => record.toMap()).toList();
+      },
+      orElse: () => <Map<String, dynamic>>[],
+    );
+
+    final records = _filterRecords(allRecords);
 
     return Scaffold(
       key: _scaffoldKey,
@@ -287,171 +254,197 @@ class _HealthRecordState extends State<HealthRecord> {
                 _buildTopBar(scheme: scheme, isDark: isDark),
 
                 Expanded(
-                  child: CustomScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 560),
-                            child: Padding(
-                              padding: EdgeInsets.fromLTRB(
-                                20.w,
-                                8.h,
-                                20.w,
-                                100.h,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // ===========================
-                                  // HERO
-                                  // ===========================
-                                  _buildOverviewCard(
-                                    scheme: scheme,
-                                    isDark: isDark,
-                                  ),
+                  child: RefreshIndicator(
+                    onRefresh: () async {
+                      await ref.refresh(healthRecordsProvider.future);
+                    },
+                    child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 560),
+                              child: Padding(
+                                padding: EdgeInsets.fromLTRB(
+                                  20.w,
+                                  8.h,
+                                  20.w,
+                                  100.h,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // ===========================
+                                    // HERO
+                                    // ===========================
+                                    _buildOverviewCard(
+                                      records: allRecords,
+                                      scheme: scheme,
+                                      isDark: isDark,
+                                    ),
 
-                                  SizedBox(height: 28.h),
+                                    SizedBox(height: 28.h),
 
-                                  // ===========================
-                                  // SEARCH / FILTER TITLE
-                                  // ===========================
-                                  _buildSectionHeader(
-                                    title: 'Medical history',
-                                    subtitle:
-                                        'Search and filter your health records',
-                                    scheme: scheme,
-                                  ),
+                                    // ===========================
+                                    // SEARCH / FILTER TITLE
+                                    // ===========================
+                                    _buildSectionHeader(
+                                      title: 'Medical history',
+                                      subtitle:
+                                          'Search and filter your health records',
+                                      scheme: scheme,
+                                    ),
 
-                                  SizedBox(height: 14.h),
+                                    SizedBox(height: 14.h),
 
-                                  // ===========================
-                                  // SEARCH
-                                  // ===========================
-                                  _buildSearchBar(
-                                    scheme: scheme,
-                                    isDark: isDark,
-                                  ),
+                                    // ===========================
+                                    // SEARCH
+                                    // ===========================
+                                    _buildSearchBar(
+                                      scheme: scheme,
+                                      isDark: isDark,
+                                    ),
 
-                                  SizedBox(height: 12.h),
+                                    SizedBox(height: 12.h),
 
-                                  // ===========================
-                                  // DATE
-                                  // ===========================
-                                  _buildDateFilter(
-                                    scheme: scheme,
-                                    isDark: isDark,
-                                  ),
+                                    // ===========================
+                                    // DATE
+                                    // ===========================
+                                    _buildDateFilter(
+                                      scheme: scheme,
+                                      isDark: isDark,
+                                    ),
 
-                                  SizedBox(height: 15.h),
+                                    SizedBox(height: 15.h),
 
-                                  // ===========================
-                                  // CATEGORY CHIPS
-                                  // ===========================
-                                  _buildCategoryChips(
-                                    scheme: scheme,
-                                    isDark: isDark,
-                                  ),
+                                    // ===========================
+                                    // CATEGORY CHIPS
+                                    // ===========================
+                                    _buildCategoryChips(
+                                      scheme: scheme,
+                                      isDark: isDark,
+                                    ),
 
-                                  SizedBox(height: 22.h),
+                                    SizedBox(height: 22.h),
 
-                                  // ===========================
-                                  // RESULTS
-                                  // ===========================
-                                  Row(
-                                    children: [
-                                      Text(
-                                        _hasActiveFilters
-                                            ? 'Filtered records'
-                                            : 'Recent records',
-                                        style: TextStyle(
-                                          fontSize: 14.sp,
-                                          fontWeight: FontWeight.w700,
-                                          color: scheme.onSurface,
-                                        ),
-                                      ),
-
-                                      SizedBox(width: 7.w),
-
-                                      Container(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 8.w,
-                                          vertical: 4.h,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: scheme.primary.withValues(
-                                            alpha: 0.09,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            30.r,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          records.length.toString(),
+                                    // ===========================
+                                    // RESULTS
+                                    // ===========================
+                                    Row(
+                                      children: [
+                                        Text(
+                                          _hasActiveFilters
+                                              ? 'Filtered records'
+                                              : 'Recent records',
                                           style: TextStyle(
-                                            fontSize: 10.sp,
+                                            fontSize: 14.sp,
                                             fontWeight: FontWeight.w700,
-                                            color: scheme.primary,
+                                            color: scheme.onSurface,
                                           ),
                                         ),
-                                      ),
 
-                                      const Spacer(),
+                                        SizedBox(width: 7.w),
 
-                                      if (_hasActiveFilters)
-                                        TextButton(
-                                          onPressed: _resetFilters,
-                                          style: TextButton.styleFrom(
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: 4.w,
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 8.w,
+                                            vertical: 4.h,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: scheme.primary.withValues(
+                                              alpha: 0.09,
                                             ),
-                                            minimumSize: Size.zero,
-                                            tapTargetSize: MaterialTapTargetSize
-                                                .shrinkWrap,
+                                            borderRadius: BorderRadius.circular(
+                                              30.r,
+                                            ),
                                           ),
                                           child: Text(
-                                            'Reset filters',
+                                            records.length.toString(),
                                             style: TextStyle(
-                                              fontSize: 11.sp,
-                                              fontWeight: FontWeight.w600,
+                                              fontSize: 10.sp,
+                                              fontWeight: FontWeight.w700,
+                                              color: scheme.primary,
                                             ),
                                           ),
                                         ),
-                                    ],
-                                  ),
 
-                                  SizedBox(height: 12.h),
+                                        const Spacer(),
 
-                                  // ===========================
-                                  // LIST
-                                  // ===========================
-                                  if (records.isEmpty)
-                                    _buildEmptyState(scheme: scheme)
-                                  else
-                                    ListView.separated(
-                                      shrinkWrap: true,
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      itemCount: records.length,
-                                      separatorBuilder: (context, index) {
-                                        return SizedBox(height: 12.h);
-                                      },
-                                      itemBuilder: (context, index) {
-                                        return _buildRecordCard(
-                                          record: records[index],
+                                        if (_hasActiveFilters)
+                                          TextButton(
+                                            onPressed: _resetFilters,
+                                            style: TextButton.styleFrom(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: 4.w,
+                                              ),
+                                              minimumSize: Size.zero,
+                                              tapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
+                                            ),
+                                            child: Text(
+                                              'Reset filters',
+                                              style: TextStyle(
+                                                fontSize: 11.sp,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+
+                                    SizedBox(height: 12.h),
+
+                                    // ===========================
+                                    // API STATE / LIST
+                                    // ===========================
+                                    healthRecordsAsync.when(
+                                      loading: () {
+                                        return _buildLoadingState(
                                           scheme: scheme,
-                                          isDark: isDark,
+                                        );
+                                      },
+
+                                      error: (error, stackTrace) {
+                                        return _buildErrorState(scheme: scheme);
+                                      },
+
+                                      data: (_) {
+                                        if (records.isEmpty) {
+                                          return _buildEmptyState(
+                                            scheme: scheme,
+                                          );
+                                        }
+
+                                        return ListView.separated(
+                                          shrinkWrap: true,
+                                          physics:
+                                              const NeverScrollableScrollPhysics(),
+                                          itemCount: records.length,
+                                          separatorBuilder: (context, index) {
+                                            return SizedBox(height: 12.h);
+                                          },
+                                          itemBuilder: (context, index) {
+                                            return _buildRecordCard(
+                                              record: records[index],
+                                              scheme: scheme,
+                                              isDark: isDark,
+                                            );
+                                          },
                                         );
                                       },
                                     ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -563,16 +556,17 @@ class _HealthRecordState extends State<HealthRecord> {
   // ============================================================
 
   Widget _buildOverviewCard({
+    required List<Map<String, dynamic>> records,
     required ColorScheme scheme,
     required bool isDark,
   }) {
-    final completed = _healthRecords
-        .where((record) => record['status'] == 'COMPLETED')
-        .length;
+    final completed = records.where((record) {
+      return record['status']?.toString().toUpperCase() == 'COMPLETED';
+    }).length;
 
-    final active = _healthRecords
-        .where((record) => record['status'] == 'ACTIVE')
-        .length;
+    final active = records.where((record) {
+      return record['status']?.toString().toUpperCase() == 'ACTIVE';
+    }).length;
 
     final gradientEnd = Color.lerp(scheme.primary, scheme.secondary, 0.28)!;
 
@@ -652,7 +646,7 @@ class _HealthRecordState extends State<HealthRecord> {
                         borderRadius: BorderRadius.circular(30.r),
                       ),
                       child: Text(
-                        '${_healthRecords.length} records',
+                        '${records.length} records',
                         style: TextStyle(
                           fontSize: 10.5.sp,
                           fontWeight: FontWeight.w600,
@@ -846,7 +840,7 @@ class _HealthRecordState extends State<HealthRecord> {
           color: scheme.onSurface,
         ),
         decoration: InputDecoration(
-          hintText: 'Search records, hospital or doctor',
+          hintText: 'Search records, hospital, doctor or diagnosis',
           hintStyle: TextStyle(
             fontSize: 11.8.sp,
             color: scheme.onSurface.withValues(alpha: 0.38),
@@ -1037,9 +1031,9 @@ class _HealthRecordState extends State<HealthRecord> {
     required ColorScheme scheme,
     required bool isDark,
   }) {
-    final type = record['type'].toString();
+    final type = record['type']?.toString() ?? 'Consultation';
 
-    final status = record['status'].toString();
+    final status = record['status']?.toString() ?? 'COMPLETED';
 
     final typeColor = _getTypeColor(type, scheme);
 
@@ -1092,7 +1086,7 @@ class _HealthRecordState extends State<HealthRecord> {
                       children: [
                         Expanded(
                           child: Text(
-                            record['title'].toString(),
+                            record['title']?.toString() ?? 'Medical Record',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -1124,7 +1118,8 @@ class _HealthRecordState extends State<HealthRecord> {
 
                         Expanded(
                           child: Text(
-                            record['hospital'].toString(),
+                            record['hospital']?.toString() ??
+                                'Unknown Provider',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -1164,7 +1159,7 @@ class _HealthRecordState extends State<HealthRecord> {
                         SizedBox(width: 8.w),
 
                         Text(
-                          _formatRecordDate(record['date'].toString()),
+                          _formatRecordDate(record['date']?.toString() ?? ''),
                           style: TextStyle(
                             fontSize: 9.8.sp,
                             fontWeight: FontWeight.w500,
@@ -1219,7 +1214,7 @@ class _HealthRecordState extends State<HealthRecord> {
     final scheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    final type = record['type'].toString();
+    final type = record['type']?.toString() ?? 'Consultation';
 
     final typeColor = _getTypeColor(type, scheme);
 
@@ -1287,7 +1282,7 @@ class _HealthRecordState extends State<HealthRecord> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              record['title'].toString(),
+                              record['title']?.toString() ?? 'Medical Record',
                               style: TextStyle(
                                 fontSize: 18.sp,
                                 height: 1.2,
@@ -1343,15 +1338,35 @@ class _HealthRecordState extends State<HealthRecord> {
                       children: [
                         _buildDetailRow(
                           label: 'Record ID',
-                          value: record['id'].toString(),
+                          value: record['id']?.toString() ?? 'Not available',
                           scheme: scheme,
                         ),
+
+                        if (_hasValue(record['claimNo'])) ...[
+                          _detailDivider(scheme),
+                          _buildDetailRow(
+                            label: 'Claim No.',
+                            value: record['claimNo'].toString(),
+                            scheme: scheme,
+                          ),
+                        ],
+
+                        if (_hasValue(record['intakeNo'])) ...[
+                          _detailDivider(scheme),
+                          _buildDetailRow(
+                            label: 'Intake No.',
+                            value: record['intakeNo'].toString(),
+                            scheme: scheme,
+                          ),
+                        ],
 
                         _detailDivider(scheme),
 
                         _buildDetailRow(
                           label: 'Facility',
-                          value: record['hospital'].toString(),
+                          value:
+                              record['hospital']?.toString() ??
+                              'Unknown Provider',
                           scheme: scheme,
                         ),
 
@@ -1364,11 +1379,31 @@ class _HealthRecordState extends State<HealthRecord> {
                           scheme: scheme,
                         ),
 
+                        if (_hasValue(record['diagnosis'])) ...[
+                          _detailDivider(scheme),
+                          _buildDetailRow(
+                            label: 'Diagnosis',
+                            value: record['diagnosis'].toString(),
+                            scheme: scheme,
+                          ),
+                        ],
+
+                        if (_hasValue(record['icdCode'])) ...[
+                          _detailDivider(scheme),
+                          _buildDetailRow(
+                            label: 'ICD Code',
+                            value: record['icdCode'].toString(),
+                            scheme: scheme,
+                          ),
+                        ],
+
                         _detailDivider(scheme),
 
                         _buildDetailRow(
                           label: 'Date',
-                          value: _formatRecordDate(record['date'].toString()),
+                          value: _formatRecordDate(
+                            record['date']?.toString() ?? '',
+                          ),
                           scheme: scheme,
                         ),
 
@@ -1376,15 +1411,23 @@ class _HealthRecordState extends State<HealthRecord> {
 
                         _buildDetailRow(
                           label: 'Status',
-                          value: record['status'].toString(),
+                          value: record['status']?.toString() ?? 'COMPLETED',
                           scheme: scheme,
                         ),
+
+                        if (_hasValue(record['claimStatus'])) ...[
+                          _detailDivider(scheme),
+                          _buildDetailRow(
+                            label: 'Claim status',
+                            value: record['claimStatus'].toString(),
+                            scheme: scheme,
+                          ),
+                        ],
                       ],
                     ),
                   ),
 
-                  if (record['notes'] != null &&
-                      record['notes'].toString().trim().isNotEmpty) ...[
+                  if (_hasValue(record['notes'])) ...[
                     SizedBox(height: 22.h),
 
                     Text(
@@ -1469,10 +1512,98 @@ class _HealthRecordState extends State<HealthRecord> {
   }
 
   // ============================================================
+  // LOADING
+  // ============================================================
+
+  Widget _buildLoadingState({required ColorScheme scheme}) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: 50.h),
+      child: Center(
+        child: SizedBox(
+          width: 28.r,
+          height: 28.r,
+          child: CircularProgressIndicator(
+            strokeWidth: 2.6,
+            color: scheme.primary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // ERROR
+  // ============================================================
+
+  Widget _buildErrorState({required ColorScheme scheme}) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 38.h),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(22.r),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 62.r,
+            height: 62.r,
+            decoration: BoxDecoration(
+              color: scheme.error.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.error_outline_rounded,
+              size: 28.r,
+              color: scheme.error,
+            ),
+          ),
+
+          SizedBox(height: 16.h),
+
+          Text(
+            'Unable to load records',
+            style: TextStyle(
+              fontSize: 15.sp,
+              fontWeight: FontWeight.w700,
+              color: scheme.onSurface,
+            ),
+          ),
+
+          SizedBox(height: 6.h),
+
+          Text(
+            'We could not load your health records. Please try again.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11.5.sp,
+              height: 1.45,
+              color: scheme.onSurface.withValues(alpha: 0.52),
+            ),
+          ),
+
+          SizedBox(height: 18.h),
+
+          FilledButton.icon(
+            onPressed: () {
+              ref.invalidate(healthRecordsProvider);
+            },
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Try again'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
   // EMPTY
   // ============================================================
 
   Widget _buildEmptyState({required ColorScheme scheme}) {
+    final hasFilters = _hasActiveFilters;
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 38.h),
@@ -1510,7 +1641,9 @@ class _HealthRecordState extends State<HealthRecord> {
           SizedBox(height: 6.h),
 
           Text(
-            'Try changing your search, category or date filters.',
+            hasFilters
+                ? 'Try changing your search, category or date filters.'
+                : 'No health records are available for this account yet.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 11.5.sp,
@@ -1519,15 +1652,17 @@ class _HealthRecordState extends State<HealthRecord> {
             ),
           ),
 
-          SizedBox(height: 16.h),
+          if (hasFilters) ...[
+            SizedBox(height: 16.h),
 
-          TextButton(
-            onPressed: _resetFilters,
-            child: Text(
-              'Reset filters',
-              style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600),
+            TextButton(
+              onPressed: _resetFilters,
+              child: Text(
+                'Reset filters',
+                style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600),
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );

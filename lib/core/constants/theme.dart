@@ -50,7 +50,7 @@ ThemeData darkTheme() => ThemeData(
   scaffoldBackgroundColor: kDarkBackground,
   colorScheme: const ColorScheme.dark(
     primary: kDarkPrimary,
-    secondary: kDarkSecondary,
+    // secondary: kDarkSecondary,
     tertiary: kDarkAccent,
     surface: kDarkSurface,
     onPrimary: kDarkTextOnPrimary,

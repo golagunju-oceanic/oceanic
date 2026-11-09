@@ -1,6 +1,6 @@
 import 'package:oceanic/features/policy/data/models/utilization_model.dart';
 
-import 'package:oceanic/features/policy/data/repositories/policy_respository.dart';
+import 'package:oceanic/features/policy/domain/repositories/repository_implementation.dart';
 
 class GetUtilizationUseCase {
   const GetUtilizationUseCase(this._repository);

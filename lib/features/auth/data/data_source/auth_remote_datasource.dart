@@ -36,9 +36,15 @@ class AuthRemoteDataSource {
   }
 
   Future<UserModel> me() async {
-    final response = await apiClient.get('/auth/me');
+    try {
+      final response = await apiClient.get('/auth/me');
 
-    return UserModel.fromJson(response.data['data']);
+      final data = Map<String, dynamic>.from(response.data['data'] as Map);
+
+      return UserModel.fromJson(data);
+    } on DioException catch (e) {
+      throw NetworkException.fromDio(e);
+    }
   }
 
   Future<void> forgotPassword(String memberId) async {

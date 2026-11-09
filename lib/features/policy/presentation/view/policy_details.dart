@@ -2,39 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
-
 import 'package:oceanic/features/policy/data/models/dependant_model.dart';
 import 'package:oceanic/features/policy/data/models/member_card_model.dart';
-import 'package:oceanic/features/policy/data/models/policy_model.dart';
+import 'package:oceanic/features/policy/data/models/policy_overview.dart';
 import 'package:oceanic/features/policy/data/models/utilization_model.dart';
 import 'package:oceanic/features/policy/presentation/provider/policy_provider.dart';
 import 'package:oceanic/presentation/widgets/drawer.dart';
 
 class PolicyDetailsScreen extends ConsumerStatefulWidget {
   const PolicyDetailsScreen({super.key});
-
   @override
   ConsumerState<PolicyDetailsScreen> createState() =>
       _PolicyDetailsScreenState();
 }
+//100017696 Adekunle
 
 class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
   bool _beneficiariesExpanded = false;
-
+  bool _showAllBenefits = false;
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-
     final state = ref.watch(policyProvider);
-
     // =========================================================
     // LOADING
     // =========================================================
-
     if (state.isLoading) {
       return Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
@@ -47,11 +42,9 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
         ),
       );
     }
-
     // =========================================================
     // ERROR
     // =========================================================
-
     if (state.error != null) {
       return Scaffold(
         key: _scaffoldKey,
@@ -61,7 +54,6 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
           child: Column(
             children: [
               _buildTopBar(scheme: scheme, isDark: isDark),
-
               Expanded(
                 child: Center(
                   child: Padding(
@@ -82,9 +74,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                             color: scheme.error,
                           ),
                         ),
-
                         SizedBox(height: 18.h),
-
                         Text(
                           'Unable to load policy',
                           textAlign: TextAlign.center,
@@ -94,17 +84,22 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                             color: scheme.onSurface,
                           ),
                         ),
-
                         SizedBox(height: 8.h),
-
                         Text(
-                          state.error!,
+                          'Please check your connection and try again.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 12.5.sp,
                             height: 1.5,
                             color: scheme.onSurface.withValues(alpha: 0.56),
                           ),
+                        ),
+                        SizedBox(height: 18.h),
+                        FilledButton.icon(
+                          onPressed: () =>
+                              ref.read(policyProvider.notifier).loadPolicy(),
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('Try again'),
                         ),
                       ],
                     ),
@@ -116,16 +111,14 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
         ),
       );
     }
-
-    final policy = state.policy;
+    final overview = state.overview;
+    final benefits = state.currentBenefits;
     final utilization = state.utilization;
     final dependants = state.dependants;
     final card = state.card;
-
     // =========================================================
     // PAGE
     // =========================================================
-
     return Scaffold(
       key: _scaffoldKey,
       drawer: const CustomDrawer(),
@@ -149,7 +142,6 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                 ),
               ),
             ),
-
             Positioned(
               top: 330.h,
               left: -100.w,
@@ -164,103 +156,135 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                 ),
               ),
             ),
-
             // -------------------------------------------------
             // CONTENT
             // -------------------------------------------------
             Column(
               children: [
                 _buildTopBar(scheme: scheme, isDark: isDark),
-
                 Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 100.h),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 560),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // =================================
-                            // MEMBER CARD
-                            // =================================
-                            if (card != null)
-                              _buildMemberCard(
-                                card: card,
-                                scheme: scheme,
-                                isDark: isDark,
-                              ),
+                  child: RefreshIndicator(
+                    onRefresh: () =>
+                        ref.read(policyProvider.notifier).loadPolicy(),
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 100.h),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 560),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // =================================
+                              // MEMBER CARD (from overview.memberCard)
+                              // =================================
+                              if (card != null) ...[
+                                _buildMemberCard(
+                                  card: card,
+                                  scheme: scheme,
+                                  isDark: isDark,
+                                ),
+                                SizedBox(height: 28.h),
+                              ],
 
-                            if (card != null) SizedBox(height: 28.h),
+                              // =================================
+                              // ASSIGNED HEALTH PLAN
+                              // =================================
+                              if (overview?.plan != null) ...[
+                                _buildSectionHeader(
+                                  title: 'Your health plan',
+                                  subtitle:
+                                      'The plan assigned to your membership',
+                                  scheme: scheme,
+                                ),
+                                SizedBox(height: 14.h),
+                                _buildPlanSummary(
+                                  overview: overview!,
+                                  scheme: scheme,
+                                  isDark: isDark,
+                                ),
+                                SizedBox(height: 30.h),
+                              ],
 
-                            // =================================
-                            // UTILIZATION
-                            // =================================
-                            if (utilization != null) ...[
+                              // =================================
+                              // POLICY INFORMATION
+                              // =================================
+                              if (overview != null) ...[
+                                _buildSectionHeader(
+                                  title: 'Policy information',
+                                  subtitle:
+                                      'Your membership and policy record details',
+                                  scheme: scheme,
+                                ),
+                                SizedBox(height: 14.h),
+                                _buildPolicyInformation(
+                                  overview: overview,
+                                  scheme: scheme,
+                                  isDark: isDark,
+                                ),
+                                SizedBox(height: 30.h),
+                              ],
+
+                              // =================================
+                              // BENEFITS
+                              // =================================
                               _buildSectionHeader(
-                                title: 'Your activity',
+                                title: 'Healthcare benefits',
                                 subtitle:
-                                    'A quick look at your health plan usage',
+                                    'Configured services, coverage and benefit limits',
                                 scheme: scheme,
                               ),
-
                               SizedBox(height: 14.h),
-
-                              _buildUtilizationCards(
-                                utilization: utilization,
+                              _buildBenefitsSection(
+                                benefits: benefits,
                                 scheme: scheme,
                                 isDark: isDark,
                               ),
-
                               SizedBox(height: 30.h),
-                            ],
 
-                            // =================================
-                            // POLICY INFORMATION
-                            // =================================
-                            if (policy != null) ...[
+                              // =================================
+                              // UTILIZATION (counts, not balances)
+                              // =================================
+                              if (utilization != null) ...[
+                                _buildSectionHeader(
+                                  title: 'Your activity',
+                                  subtitle:
+                                      'Total recorded claims and authorizations',
+                                  scheme: scheme,
+                                ),
+                                SizedBox(height: 14.h),
+                                _buildUtilizationCards(
+                                  utilization: utilization,
+                                  scheme: scheme,
+                                  isDark: isDark,
+                                ),
+                                SizedBox(height: 30.h),
+                              ],
+
+                              // =================================
+                              // BENEFICIARIES
+                              // =================================
                               _buildSectionHeader(
-                                title: 'Policy information',
+                                title: 'Beneficiaries',
                                 subtitle:
-                                    'Your membership and coverage details',
+                                    '${dependants.length} ${dependants.length == 1 ? 'person' : 'people'} linked to your plan',
                                 scheme: scheme,
                               ),
-
                               SizedBox(height: 14.h),
-
-                              _buildPolicyInformation(
-                                policy: policy,
+                              _buildBeneficiariesCard(
+                                dependants: dependants,
                                 scheme: scheme,
                                 isDark: isDark,
                               ),
-
-                              SizedBox(height: 30.h),
                             ],
-
-                            // =================================
-                            // BENEFICIARIES
-                            // =================================
-                            _buildSectionHeader(
-                              title: 'Beneficiaries',
-                              subtitle:
-                                  '${dependants.length} ${dependants.length == 1 ? 'person' : 'people'} linked to your plan',
-                              scheme: scheme,
-                            ),
-
-                            SizedBox(height: 14.h),
-
-                            _buildBeneficiariesCard(
-                              dependants: dependants,
-                              scheme: scheme,
-                              isDark: isDark,
-                            ),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                ),
+                    ), // SingleChildScrollView
+                  ), // RefreshIndicator
+                ), // Expanded
               ],
             ),
           ],
@@ -272,7 +296,6 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
   // ===========================================================
   // TOP BAR
   // ===========================================================
-
   Widget _buildTopBar({required ColorScheme scheme, required bool isDark}) {
     return Padding(
       padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
@@ -286,9 +309,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
               Navigator.of(context).pop();
             },
           ),
-
           SizedBox(width: 14.w),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -303,9 +324,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                     color: scheme.onSurface,
                   ),
                 ),
-
                 SizedBox(height: 3.h),
-
                 Text(
                   'Membership & coverage',
                   style: TextStyle(
@@ -317,7 +336,6 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
               ],
             ),
           ),
-
           _buildTopButton(
             icon: Icons.menu_rounded,
             scheme: scheme,
@@ -368,16 +386,13 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
   // ===========================================================
   // MEMBER CARD
   // ===========================================================
-
   Widget _buildMemberCard({
     required MemberCardModel card,
     required ColorScheme scheme,
     required bool isDark,
   }) {
     final secondGradient = Color.lerp(scheme.primary, scheme.secondary, 0.28)!;
-
     final statusIsActive = card.status.toLowerCase() == 'active';
-
     return Container(
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
@@ -413,7 +428,6 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
               ),
             ),
           ),
-
           Positioned(
             right: 18.w,
             bottom: -35.h,
@@ -423,7 +437,6 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
               color: Colors.white.withValues(alpha: 0.055),
             ),
           ),
-
           // ---------------------------------------------------
           // CARD CONTENT
           // ---------------------------------------------------
@@ -436,9 +449,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildMemberAvatar(card),
-
                     SizedBox(width: 14.w),
-
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -452,9 +463,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-
                           SizedBox(height: 4.h),
-
                           Text(
                             card.fullName,
                             maxLines: 2,
@@ -467,9 +476,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                               fontWeight: FontWeight.w800,
                             ),
                           ),
-
                           SizedBox(height: 5.h),
-
                           Text(
                             'ID: ${card.memberId}',
                             style: TextStyle(
@@ -481,9 +488,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                         ],
                       ),
                     ),
-
                     SizedBox(width: 8.w),
-
                     Container(
                       padding: EdgeInsets.symmetric(
                         horizontal: 10.w,
@@ -509,9 +514,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                               color: Colors.white,
                             ),
                           ),
-
                           SizedBox(width: 5.w),
-
                           Text(
                             card.status.toUpperCase(),
                             style: TextStyle(
@@ -526,29 +529,21 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                     ),
                   ],
                 ),
-
                 SizedBox(height: 20.h),
-
                 Container(
                   height: 1,
                   color: Colors.white.withValues(alpha: 0.14),
                 ),
-
                 SizedBox(height: 17.h),
-
                 Row(
                   children: [
                     Expanded(
                       child: _buildMemberInfo(
                         title: 'Plan',
-                        value: card.planVariant.isEmpty
-                            ? 'Not set'
-                            : card.planVariant.toUpperCase(),
+                        value: card.displayPlanName,
                       ),
                     ),
-
                     SizedBox(width: 12.w),
-
                     Expanded(
                       child: _buildMemberInfo(
                         title: 'Gender',
@@ -559,9 +554,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                     ),
                   ],
                 ),
-
                 SizedBox(height: 14.h),
-
                 Row(
                   children: [
                     Expanded(
@@ -572,9 +565,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                             : 'Not set',
                       ),
                     ),
-
                     SizedBox(width: 12.w),
-
                     Expanded(
                       child: _buildMemberInfo(
                         title: 'Genotype',
@@ -606,9 +597,9 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
         ),
       ),
       child: ClipOval(
-        child: card.photo.trim().isNotEmpty
+        child: card.displayPhotoUrl != null
             ? Image.network(
-                card.photo,
+                card.displayPhotoUrl!,
                 width: 54.r,
                 height: 54.r,
                 fit: BoxFit.cover,
@@ -653,12 +644,10 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
               fontWeight: FontWeight.w500,
             ),
           ),
-
           SizedBox(height: 4.h),
-
           Text(
             value,
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: Colors.white,
@@ -672,9 +661,309 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
   }
 
   // ===========================================================
+  // PLAN SUMMARY
+  // ===========================================================
+  String _display(String? value) {
+    if (value == null || value.trim().isEmpty) return 'Not provided';
+    return value.trim();
+  }
+
+  String _date(DateTime? value) =>
+      value == null ? 'Not provided' : DateFormat('dd MMM yyyy').format(value);
+
+  BoxDecoration _surfaceDecoration(ColorScheme scheme, bool isDark) {
+    return BoxDecoration(
+      color: scheme.surface,
+      borderRadius: BorderRadius.circular(23.r),
+      border: Border.all(
+        color: scheme.onSurface.withValues(alpha: isDark ? 0.08 : 0.05),
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: isDark ? 0.08 : 0.035),
+          blurRadius: 17.r,
+          offset: Offset(0, 6.h),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPlanSummary({
+    required PolicyOverviewModel overview,
+    required ColorScheme scheme,
+    required bool isDark,
+  }) {
+    final plan = overview.plan!;
+    final policy = overview.policy;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(18.r),
+      decoration: _surfaceDecoration(scheme, isDark),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(10.r),
+                decoration: BoxDecoration(
+                  color: scheme.primary.withValues(alpha: 0.09),
+                  borderRadius: BorderRadius.circular(14.r),
+                ),
+                child: Icon(
+                  Icons.health_and_safety_outlined,
+                  color: scheme.primary,
+                  size: 23.r,
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Text(
+                  _display(plan.name),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: scheme.onSurface,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 17.sp,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 15.h),
+          _buildDivider(scheme),
+          _buildPolicyRow(
+            icon: Icons.layers_outlined,
+            label: 'Base plan',
+            value: _display(plan.basePlanName),
+            scheme: scheme,
+          ),
+          _buildDivider(scheme),
+          _buildPolicyRow(
+            icon: Icons.event_available_outlined,
+            label: 'Policy start date',
+            value: _date(policy.startDate),
+            scheme: scheme,
+          ),
+          _buildDivider(scheme),
+          _buildPolicyRow(
+            icon: Icons.event_busy_outlined,
+            label: 'Policy end date',
+            value: _date(policy.endDate),
+            scheme: scheme,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===========================================================
+  // HEALTHCARE BENEFITS
+  // ===========================================================
+  Widget _buildBenefitsSection({
+    required PolicyBenefitsModel? benefits,
+    required ColorScheme scheme,
+    required bool isDark,
+  }) {
+    if (benefits == null) {
+      return _buildBenefitsNotice(
+        scheme: scheme,
+        isDark: isDark,
+        message: 'Benefit details are not available right now.',
+      );
+    }
+
+    if (benefits.items.isEmpty) {
+      final message = benefits.benefitDataStatus == 'NOT_CONFIGURED'
+          ? (benefits.benefitMessage?.trim().isNotEmpty == true
+                ? benefits.benefitMessage!
+                : 'Detailed benefit records are not configured for this plan.')
+          : (benefits.benefitMessage?.trim().isNotEmpty == true
+                ? benefits.benefitMessage!
+                : 'No benefit details were returned for this plan.');
+
+      return _buildBenefitsNotice(
+        scheme: scheme,
+        isDark: isDark,
+        message: message,
+      );
+    }
+
+    final items = benefits.items;
+    final visibleItems = _showAllBenefits ? items : items.take(5).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(bottom: 12.h),
+          child: Text(
+            '${items.length} configured benefit ${items.length == 1 ? 'record' : 'records'}',
+            style: TextStyle(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w600,
+              color: scheme.onSurface.withValues(alpha: 0.70),
+            ),
+          ),
+        ),
+        for (final benefit in visibleItems) ...[
+          _buildBenefitItem(benefit: benefit, scheme: scheme, isDark: isDark),
+          SizedBox(height: 10.h),
+        ],
+        if (items.length > 5)
+          Align(
+            alignment: Alignment.center,
+            child: TextButton.icon(
+              onPressed: () => setState(() {
+                _showAllBenefits = !_showAllBenefits;
+              }),
+              icon: Icon(
+                _showAllBenefits
+                    ? Icons.keyboard_arrow_up_rounded
+                    : Icons.keyboard_arrow_down_rounded,
+              ),
+              label: Text(
+                _showAllBenefits
+                    ? 'Show fewer benefits'
+                    : 'View all ${items.length} benefit records',
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildBenefitsNotice({
+    required ColorScheme scheme,
+    required bool isDark,
+    required String message,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(17.r),
+      decoration: _surfaceDecoration(scheme, isDark),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline_rounded, color: scheme.primary, size: 22.r),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Benefit details unavailable',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13.sp,
+                    color: scheme.onSurface,
+                  ),
+                ),
+                SizedBox(height: 5.h),
+                Text(
+                  message,
+                  style: TextStyle(
+                    color: scheme.onSurface.withValues(alpha: 0.65),
+                    fontSize: 12.sp,
+                    height: 1.45,
+                  ),
+                ),
+                SizedBox(height: 7.h),
+                Text(
+                  'These records alone do not determine whether a service is covered.',
+                  style: TextStyle(
+                    color: scheme.onSurface.withValues(alpha: 0.58),
+                    fontSize: 11.sp,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBenefitItem({
+    required PolicyBenefitItemModel benefit,
+    required ColorScheme scheme,
+    required bool isDark,
+  }) {
+    final title = benefit.description?.trim().isNotEmpty == true
+        ? benefit.description!.trim()
+        : 'Benefit ID ${benefit.benefitId}';
+
+    // Display raw coverage metadata; the ERP's status values
+    // have not yet been verified as covered/excluded flags.
+    final details = <String>[
+      if (benefit.coverageStatus?.trim().isNotEmpty == true)
+        'Coverage status: ${benefit.coverageStatus}',
+      if (benefit.limitAmount != null) 'Amount limit: ${benefit.limitAmount}',
+      if (benefit.limitCount != null) 'Count limit: ${benefit.limitCount}',
+      if (benefit.limitPeriod?.trim().isNotEmpty == true)
+        'Limit period: ${benefit.limitPeriod}',
+      if (benefit.limitType?.trim().isNotEmpty == true)
+        'Limit type: ${benefit.limitType}',
+      if (benefit.applicableTo?.trim().isNotEmpty == true)
+        'Applies to: ${benefit.applicableTo}',
+      if (benefit.capStrategy?.trim().isNotEmpty == true)
+        'Cap strategy: ${benefit.capStrategy}',
+      if (benefit.isUnlimitedOverride == true) 'Unlimited override: Yes',
+      if (benefit.hasOverride) 'Policy-specific override applied',
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16.r),
+      decoration: _surfaceDecoration(scheme, isDark),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.medical_services_outlined,
+                size: 20.r,
+                color: scheme.primary,
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (details.isNotEmpty) ...[
+            SizedBox(height: 12.h),
+            for (final detail in details) ...[
+              Text(
+                detail,
+                style: TextStyle(
+                  fontSize: 11.5.sp,
+                  height: 1.4,
+                  color: scheme.onSurface.withValues(alpha: 0.68),
+                ),
+              ),
+              SizedBox(height: 5.h),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ===========================================================
   // SECTION HEADER
   // ===========================================================
-
   Widget _buildSectionHeader({
     required String title,
     required String subtitle,
@@ -693,9 +982,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
             color: scheme.onSurface,
           ),
         ),
-
         SizedBox(height: 4.h),
-
         Text(
           subtitle,
           style: TextStyle(
@@ -712,7 +999,6 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
   // ===========================================================
   // UTILIZATION
   // ===========================================================
-
   Widget _buildUtilizationCards({
     required UtilizationModel utilization,
     required ColorScheme scheme,
@@ -730,9 +1016,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
             isDark: isDark,
           ),
         ),
-
         SizedBox(width: 12.w),
-
         Expanded(
           child: _buildUsageCard(
             title: 'Authorizations',
@@ -786,17 +1070,14 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                 ),
                 child: Icon(icon, size: 21.r, color: color),
               ),
-
               Icon(
-                Icons.trending_up_rounded,
+                Icons.analytics_outlined,
                 size: 17.r,
                 color: scheme.onSurface.withValues(alpha: 0.26),
               ),
             ],
           ),
-
           SizedBox(height: 18.h),
-
           Text(
             value,
             style: TextStyle(
@@ -807,9 +1088,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
               color: scheme.onSurface,
             ),
           ),
-
           SizedBox(height: 6.h),
-
           Text(
             title,
             maxLines: 1,
@@ -828,70 +1107,104 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
   // ===========================================================
   // POLICY INFORMATION
   // ===========================================================
-
+  // ===========================================================
+  // POLICY INFORMATION (actual overview API values)
+  // ===========================================================
   Widget _buildPolicyInformation({
-    required PolicyModel policy,
+    required PolicyOverviewModel overview,
     required ColorScheme scheme,
     required bool isDark,
   }) {
+    final member = overview.member;
+    final plan = overview.plan;
+    final policy = overview.policy;
+
+    final rows = <Widget>[
+      _buildPolicyRow(
+        icon: Icons.person_outline_rounded,
+        label: 'Policy holder',
+        value: _display(member.fullName),
+        scheme: scheme,
+      ),
+      _buildDivider(scheme),
+      _buildPolicyRow(
+        icon: Icons.badge_outlined,
+        label: 'Member ID',
+        value: _display(member.memberId),
+        scheme: scheme,
+      ),
+      _buildDivider(scheme),
+      _buildPolicyStatusRow(status: member.status, scheme: scheme),
+      _buildDivider(scheme),
+      _buildPolicyRow(
+        icon: Icons.calendar_month_outlined,
+        label: 'Date joined',
+        value: _date(member.dateJoined),
+        scheme: scheme,
+      ),
+      _buildDivider(scheme),
+      _buildPolicyRow(
+        icon: Icons.layers_outlined,
+        label: 'Network tier',
+        value: _display(plan?.hospitalTier),
+        scheme: scheme,
+      ),
+      _buildDivider(scheme),
+      _buildPolicyRow(
+        icon: Icons.group_work_outlined,
+        label: 'Plan variant',
+        value: _display(plan?.variantType),
+        scheme: scheme,
+      ),
+      _buildDivider(scheme),
+      _buildPolicyRow(
+        icon: Icons.numbers_rounded,
+        label: 'Policy number',
+        value: _display(policy.policyNumber),
+        scheme: scheme,
+      ),
+    ];
+
+    if (policy.corporatePolicyId != null) {
+      rows.addAll([
+        _buildDivider(scheme),
+        _buildPolicyRow(
+          icon: Icons.business_outlined,
+          label: 'Corporate policy record ID',
+          value: policy.corporatePolicyId!,
+          scheme: scheme,
+        ),
+      ]);
+    }
+    if (policy.corporatePolicyActive != null) {
+      rows.addAll([
+        _buildDivider(scheme),
+        _buildPolicyRow(
+          icon: Icons.fact_check_outlined,
+          label: 'Corporate policy record',
+          value: policy.corporatePolicyActive!
+              ? 'Marked active'
+              : 'Marked inactive',
+          scheme: scheme,
+        ),
+      ]);
+    }
+    if (policy.individualPolicyStatus != null) {
+      rows.addAll([
+        _buildDivider(scheme),
+        _buildPolicyRow(
+          icon: Icons.description_outlined,
+          label: 'Individual policy status',
+          value: _display(policy.individualPolicyStatus),
+          scheme: scheme,
+        ),
+      ]);
+    }
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(horizontal: 17.w, vertical: 5.h),
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        borderRadius: BorderRadius.circular(23.r),
-        border: Border.all(
-          color: scheme.onSurface.withValues(alpha: isDark ? 0.08 : 0.05),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.08 : 0.035),
-            blurRadius: 17.r,
-            offset: Offset(0, 6.h),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          _buildPolicyRow(
-            icon: Icons.person_outline_rounded,
-            label: 'Policy holder',
-            value: '${policy.firstName} ${policy.lastName}',
-            scheme: scheme,
-          ),
-
-          _buildDivider(scheme),
-
-          _buildPolicyRow(
-            icon: Icons.badge_outlined,
-            label: 'Member ID',
-            value: policy.memberId,
-            scheme: scheme,
-          ),
-
-          _buildDivider(scheme),
-
-          _buildPolicyRow(
-            icon: Icons.layers_outlined,
-            label: 'Network tier',
-            value: 'TIER 1',
-            scheme: scheme,
-          ),
-
-          _buildDivider(scheme),
-
-          _buildPolicyStatusRow(status: policy.status, scheme: scheme),
-
-          _buildDivider(scheme),
-
-          _buildPolicyRow(
-            icon: Icons.calendar_month_outlined,
-            label: 'Date joined',
-            value: DateFormat('dd MMM yyyy').format(policy.dateJoined),
-            scheme: scheme,
-          ),
-        ],
-      ),
+      decoration: _surfaceDecoration(scheme, isDark),
+      child: Column(children: rows),
     );
   }
 
@@ -914,9 +1227,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
             ),
             child: Icon(icon, size: 18.r, color: scheme.primary),
           ),
-
           SizedBox(width: 12.w),
-
           Expanded(
             child: Text(
               label,
@@ -927,9 +1238,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
               ),
             ),
           ),
-
           SizedBox(width: 12.w),
-
           Flexible(
             child: Text(
               value,
@@ -954,11 +1263,9 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
     required ColorScheme scheme,
   }) {
     final isActive = status.toLowerCase() == 'active';
-
     final statusColor = isActive
         ? const Color(0xFF16A34A)
         : const Color(0xFFF59E0B);
-
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 14.h),
       child: Row(
@@ -976,12 +1283,10 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
               color: statusColor,
             ),
           ),
-
           SizedBox(width: 12.w),
-
           Expanded(
             child: Text(
-              'Status',
+              'Membership status',
               style: TextStyle(
                 fontSize: 12.sp,
                 fontWeight: FontWeight.w500,
@@ -989,7 +1294,6 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
               ),
             ),
           ),
-
           Container(
             padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 6.h),
             decoration: BoxDecoration(
@@ -1007,9 +1311,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                     color: statusColor,
                   ),
                 ),
-
                 SizedBox(width: 5.w),
-
                 Text(
                   status.toUpperCase(),
                   style: TextStyle(
@@ -1038,7 +1340,6 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
   // ===========================================================
   // BENEFICIARIES
   // ===========================================================
-
   Widget _buildBeneficiariesCard({
     required List<DependantModel> dependants,
     required ColorScheme scheme,
@@ -1066,11 +1367,13 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(23.r),
-              onTap: () {
-                setState(() {
-                  _beneficiariesExpanded = !_beneficiariesExpanded;
-                });
-              },
+              onTap: dependants.isEmpty
+                  ? null
+                  : () {
+                      setState(() {
+                        _beneficiariesExpanded = !_beneficiariesExpanded;
+                      });
+                    },
               child: Padding(
                 padding: EdgeInsets.all(16.r),
                 child: Row(
@@ -1088,9 +1391,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                         color: scheme.secondary,
                       ),
                     ),
-
                     SizedBox(width: 12.w),
-
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1105,12 +1406,10 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                               color: scheme.onSurface,
                             ),
                           ),
-
                           SizedBox(height: 3.h),
-
                           Text(
                             dependants.isEmpty
-                                ? 'No dependants have been added'
+                                ? 'No dependants are linked to this membership'
                                 : 'View members linked to this policy',
                             style: TextStyle(
                               fontSize: 10.8.sp,
@@ -1120,7 +1419,6 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                         ],
                       ),
                     ),
-
                     if (dependants.isNotEmpty)
                       AnimatedRotation(
                         turns: _beneficiariesExpanded ? 0.5 : 0,
@@ -1144,7 +1442,6 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
               ),
             ),
           ),
-
           if (dependants.isNotEmpty)
             AnimatedSize(
               duration: const Duration(milliseconds: 280),
@@ -1156,7 +1453,6 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                           padding: EdgeInsets.symmetric(horizontal: 16.w),
                           child: _buildDivider(scheme),
                         ),
-
                         Padding(
                           padding: EdgeInsets.fromLTRB(16.w, 6.h, 16.w, 12.h),
                           child: _buildDependants(
@@ -1186,11 +1482,8 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
       },
       itemBuilder: (context, index) {
         final dependant = dependants[index];
-
         final name = dependant.fullName.trim();
-
         final initial = name.isNotEmpty ? name[0].toUpperCase() : 'B';
-
         return Padding(
           padding: EdgeInsets.symmetric(vertical: 11.h),
           child: Row(
@@ -1212,9 +1505,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                   ),
                 ),
               ),
-
               SizedBox(width: 12.w),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1229,9 +1520,7 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                         color: scheme.onSurface,
                       ),
                     ),
-
                     SizedBox(height: 3.h),
-
                     Text(
                       dependant.relationship,
                       style: TextStyle(
@@ -1243,7 +1532,6 @@ class _PolicyDetailsScreenState extends ConsumerState<PolicyDetailsScreen> {
                   ],
                 ),
               ),
-
               Icon(
                 Icons.person_outline_rounded,
                 size: 18.r,

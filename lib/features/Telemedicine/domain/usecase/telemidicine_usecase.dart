@@ -1,22 +1,26 @@
-import '../../data/models/agora_token_response.dart';
+import '../entities/telemedicine_entities.dart';
 import '../repository/telemedicine_repository.dart';
 
 class TelemedicineUseCase {
-  final TelemedicineRepository repository;
+  final TelemedicineRepository _repository;
 
-  TelemedicineUseCase(this.repository);
+  TelemedicineUseCase(this._repository);
 
-  Future<AgoraTokenResponse> generateToken({
-    required String channel,
-    String role = 'publisher',
-  }) {
-    return repository.generateToken(channel: channel, role: role);
-  }
+  Future<CallSessionEntity> ring(String appointmentId) =>
+      _repository.ringDoctor(appointmentId);
 
-  Future<AgoraTokenResponse> initiateCall({
-    required String doctorId,
-    String callType = 'video',
-  }) {
-    return repository.initiateCall(doctorId: doctorId, callType: callType);
-  }
+  Future<CallSessionEntity> getStatus(String callId) =>
+      _repository.getCallStatus(callId);
+
+  Future<CallSessionEntity?> checkIncoming() =>
+      _repository.checkIncomingCall();
+
+  Future<CallSessionEntity> answer(String callId, {required bool accept}) =>
+      _repository.answerCall(callId, accept: accept);
+
+  Future<AgoraConnectionCredentials> join(String callId) =>
+      _repository.joinCallSession(callId);
+
+  Future<void> end(String callId) =>
+      _repository.endCallSession(callId);
 }

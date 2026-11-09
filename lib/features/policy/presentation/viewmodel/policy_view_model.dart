@@ -1,63 +1,142 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:oceanic/features/policy/domain/usecase/get_card_usecase.dart';
-import 'package:oceanic/features/policy/domain/usecase/get_dependants_usecase.dart';
-import 'package:oceanic/features/policy/domain/usecase/get_policy_usecase.dart';
-import 'package:oceanic/features/policy/domain/usecase/get_utilization_usecase.dart';
-import 'package:oceanic/features/policy/presentation/provider/policy_provider.dart';
 
-import '../state/policy_state.dart';
+import 'package:oceanic/features/policy/data/models/policy_model.dart';
+import 'package:oceanic/features/policy/data/models/policy_overview.dart';
+
+import 'package:oceanic/features/policy/presentation/provider/policy_provider.dart';
+import 'package:oceanic/features/policy/presentation/state/policy_state.dart';
 
 class PolicyViewModel extends Notifier<PolicyState> {
-  late final GetPolicyUsecase _getPolicyUseCase;
-  late final GetUtilizationUseCase _getUtilizationUseCase;
-  late final GetDependantsUseCase _getDependantsUseCase;
-  late final GetPolicyCardUseCase _getPolicyCardUseCase;
+  bool _disposed = false;
+  int _loadSequence = 0;
 
   @override
   PolicyState build() {
-    _getPolicyUseCase = ref.read(getPolicyUseCaseProvider);
+    ref.onDispose(() {
+      _disposed = true;
+    });
 
-    _getUtilizationUseCase = ref.read(getUtilizationUseCaseProvider);
-
-    _getDependantsUseCase = ref.read(getDependantsUseCaseProvider);
-
-    _getPolicyCardUseCase = ref.read(getPolicyCardUseCaseProvider);
-
+    // Start loading after the initial state is available.
     Future.microtask(loadPolicy);
 
     return const PolicyState(isLoading: true);
   }
 
+  // =====================================================
+  // LOAD COMPLETE POLICY OVERVIEW
+  // =====================================================
+
   Future<void> loadPolicy() async {
+    if (_disposed) return;
+
+    final requestId = ++_loadSequence;
+
+    state = state.copyWith(isLoading: true, error: null);
+
     try {
-      print("1. Fetching policy...");
-      final policy = await _getPolicyUseCase();
-      print("Policy loaded");
+      final overview = await ref.read(getPolicyOverviewUseCaseProvider).call();
 
-      print("2. Fetching utilization...");
-      final utilization = await _getUtilizationUseCase();
-      print("Utilization loaded");
+      // Avoid updating a disposed provider or applying
+      // an older response after a newer refresh.
+      if (_disposed || requestId != _loadSequence) {
+        return;
+      }
 
-      print("3. Fetching dependants...");
-      final dependants = await _getDependantsUseCase();
-      print("Dependants loaded");
+      // Preserve the old PolicyModel for screens
+      // that still depend on state.policy.
+      final legacyPolicy = _buildLegacyPolicy(overview);
 
-      print("4. Fetching card...");
-      final card = await _getPolicyCardUseCase();
-      print("Card loaded");
+      // One API response populates the complete state.
+      state = PolicyState(
+        isLoading: false,
+        error: null,
+
+        // Existing state fields
+        policy: legacyPolicy,
+        utilization: overview.utilization,
+        dependants: overview.dependants,
+        card: overview.memberCard,
+
+        // New state fields
+        overview: overview,
+        benefits: overview.benefits,
+
+        isLoadingBenefits: false,
+        benefitsError: null,
+      );
+    } catch (error) {
+      if (_disposed || requestId != _loadSequence) {
+        return;
+      }
+
+      state = state.copyWith(isLoading: false, error: error.toString());
+    }
+  }
+
+  // =====================================================
+  // REFRESH BENEFITS INDEPENDENTLY
+  // =====================================================
+
+  Future<void> loadBenefits() async {
+    if (_disposed) return;
+
+    state = state.copyWith(isLoadingBenefits: true, benefitsError: null);
+
+    try {
+      final benefits = await ref.read(getBenefitsUseCaseProvider).call();
+
+      if (_disposed) return;
 
       state = state.copyWith(
-        isLoading: false,
-        policy: policy,
-        utilization: utilization,
-        dependants: dependants,
-        card: card,
+        isLoadingBenefits: false,
+        benefits: benefits,
+        benefitsError: null,
       );
-    } catch (e, s) {
-      print(e);
-      print(s);
+    } catch (error) {
+      if (_disposed) return;
 
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(
+        isLoadingBenefits: false,
+        benefitsError: error.toString(),
+      );
     }
+  }
+
+  // =====================================================
+  // CONVERT OVERVIEW TO EXISTING POLICY MODEL
+  // =====================================================
+
+  PolicyModel? _buildLegacyPolicy(PolicyOverviewModel overview) {
+    final member = overview.member;
+    final plan = overview.plan;
+    final policy = overview.policy;
+
+    // Existing PolicyModel requires a joining date.
+    // Do not invent one if the API does not supply it.
+    final dateJoined = member.dateJoined;
+
+    if (dateJoined == null) {
+      return null;
+    }
+
+    return PolicyModel(
+      memberId: member.memberId,
+      firstName: member.firstName,
+      lastName: member.lastName,
+      status: member.status,
+      policyNumber: policy.policyNumber,
+      dateJoined: dateJoined,
+
+      // Fields added to your updated PolicyModel
+      planName: plan?.name,
+      basePlanName: plan?.basePlanName,
+      hospitalTier: plan?.hospitalTier,
+      planVariant: plan?.variantType,
+
+      corporatePolicyId: policy.corporatePolicyId,
+      corporatePolicyActive: policy.corporatePolicyActive,
+      startDate: policy.startDate,
+      endDate: policy.endDate,
+    );
   }
 }

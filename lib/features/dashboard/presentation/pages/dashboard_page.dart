@@ -6,14 +6,19 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:oceanic/features/Telemedicine/data/datasource/call_notification_service.dart';
 import 'package:oceanic/features/Telemedicine/presentation/view/doctor_selection_screen.dart';
+import 'package:oceanic/features/Telemedicine/presentation/view/sample/available_doctors_screen%20(2).dart';
+import 'package:oceanic/features/auth/data/models/user_models.dart';
 import 'package:oceanic/features/auth/presentations/provider/auth_provider.dart';
 import 'package:oceanic/features/health_provider/presentation/views/health_provider.dart';
 import 'package:oceanic/features/medical-request/presentation/view/medical_request.dart';
 import 'package:oceanic/features/policy/presentation/view/policy_details.dart';
+import 'package:oceanic/features/wellness/presentation/screens/wellness_screen.dart';
 import 'package:oceanic/main.dart';
 import 'package:oceanic/features/authorization/presentation/view/authorization_screen.dart';
 import 'package:oceanic/presentation/features/home/view/health_record.dart';
 import 'package:oceanic/presentation/widgets/drawer.dart';
+// import 'package:firebase_messaging/firebase_messaging.dart';
+// import 'package:flutter/services.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -33,10 +38,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   int _currentBanner = 0;
 
-  // ============================================================
-  // BANNERS
-  // ============================================================
-
   final List<Map<String, String>> _banners = [
     {
       'title': 'Sustaining Your Peace',
@@ -54,10 +55,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       'image': 'assets/images/banner3.jpg',
     },
   ];
-
-  // ============================================================
-  // SERVICES
-  // ============================================================
 
   final List<Map<String, dynamic>> _menuItems = [
     {
@@ -78,12 +75,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       'subtitle': 'Medical history & reports',
       'route': const HealthRecord(),
     },
-    {
-      'icon': Icons.video_camera_front_outlined,
-      'title': 'Telemedicine',
-      'subtitle': 'Consult a doctor online',
-      'route': const DoctorSelectionScreen(),
-    },
+    // {
+    //   'icon': Icons.video_camera_front_outlined,
+    //   'title': 'Telemedicine',
+    //   'subtitle': 'Consult a doctor online',
+    //   'route': const AvailableDoctorsScreen(),
+    // },
     {
       'icon': Icons.medication_liquid_outlined,
       'title': 'Medication',
@@ -97,6 +94,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       'route': const HealthProvider(),
     },
   ];
+
+  bool _canAccessWellness(String? planName) {
+    final normalized = planName?.trim().toUpperCase() ?? '';
+    if (normalized.isEmpty) return false;
+
+    final baseName = normalized.split(RegExp(r'[\s(]')).first;
+
+    switch (baseName) {
+      case 'CERULEAN':
+      case 'ADMIRAL':
+        return true;
+      default:
+        return false;
+    }
+  }
 
   // ============================================================
   // INIT
@@ -185,6 +197,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final authState = ref.watch(authProvider);
     final user = authState.user;
 
+    // Rebuilt when the logged-in enrollee or their plan changes.
+    final showWellness =
+        user?.role.toLowerCase() == 'member' &&
+        _canAccessWellness(user?.plan?.name);
+
+    // Keep the existing service list unchanged; conditionally extend it.
+    final visibleMenuItems = <Map<String, dynamic>>[
+      ..._menuItems,
+      if (showWellness)
+        {
+          'icon': Icons.spa_outlined,
+          'title': 'Wellness',
+          'subtitle': 'Gym, swimming & spa benefits',
+          'route': const WellnessScreen(),
+        },
+    ];
+
     final rawName = user?.lastName ?? '';
 
     final displayName = rawName.trim().isEmpty ? 'Member' : rawName.trim();
@@ -249,35 +278,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // ================================
-                            // HEADER
-                            // ================================
                             _buildHeader(
                               scheme: scheme,
                               isDark: isDark,
                               displayName: displayName,
                               initial: initial,
+                              user: user,
                             ),
 
                             SizedBox(height: 22.h),
-
-                            // ================================
-                            // PRIMARY HERO CARD
-                            // ================================
                             _buildHeroCard(scheme: scheme, isDark: isDark),
 
                             SizedBox(height: 18.h),
-
-                            // ================================
-                            // QUICK ACCESS
-                            // ================================
                             _buildQuickAccess(scheme: scheme, isDark: isDark),
 
                             SizedBox(height: 30.h),
 
-                            // ================================
-                            // HEALTH HIGHLIGHTS
-                            // ================================
                             _buildSectionTitle(
                               title: 'Health Highlights',
                               subtitle: 'Updates and useful health information',
@@ -290,9 +306,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                             SizedBox(height: 30.h),
 
-                            // ================================
-                            // SERVICES
-                            // ================================
                             _buildSectionTitle(
                               title: 'Services',
                               subtitle: 'Everything you need, in one place',
@@ -301,7 +314,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                             SizedBox(height: 14.h),
 
-                            _buildServicesGrid(scheme: scheme, isDark: isDark),
+                            _buildServicesGrid(
+                              scheme: scheme,
+                              isDark: isDark,
+                              menuItems: visibleMenuItems,
+                            ),
+
+                            // ElevatedButton(
+                            //   onPressed: () async {
+                            //     final token = await FirebaseMessaging.instance
+                            //         .getToken();
+
+                            //     if (token == null) {
+                            //       debugPrint('FCM token is null');
+                            //       return;
+                            //     }
+
+                            //     await Clipboard.setData(
+                            //       ClipboardData(text: token),
+                            //     );
+
+                            //     debugPrint(
+                            //       'FCM token copied (${token.length} characters)',
+                            //     );
+                            //   },
+                            //   child: const Text('Copy FCM Token'),
+                            // ),
                           ],
                         ),
                       ),
@@ -316,15 +354,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // ============================================================
-  // HEADER
-  // ============================================================
-
   Widget _buildHeader({
     required ColorScheme scheme,
     required bool isDark,
     required String displayName,
     required String initial,
+    required UserModel? user,
   }) {
     return Row(
       children: [
@@ -358,14 +393,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ],
                       ),
                     ),
-                    child: Text(
-                      initial,
-                      style: TextStyle(
-                        color: scheme.onPrimary,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 17.sp,
-                      ),
-                    ),
+                    child: user!.profilePicture != null
+                        ? Image.asset(user.profilePicture!)
+                        : Text(
+                            initial,
+                            style: TextStyle(
+                              color: scheme.onPrimary,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 17.sp,
+                            ),
+                          ),
                   ),
 
                   SizedBox(width: 11.w),
@@ -697,7 +734,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Row(
         children: [
           Expanded(
-            child: _buildQuickAction(
+            child:
+            _buildQuickAction(
               icon: Icons.video_camera_front_outlined,
               label: 'Telemedicine',
               color: scheme.primary,
@@ -974,11 +1012,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildServicesGrid({
     required ColorScheme scheme,
     required bool isDark,
+    required List<Map<String, dynamic>> menuItems,
   }) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: _menuItems.length,
+      itemCount: menuItems.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 13.w,
@@ -987,7 +1026,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       itemBuilder: (context, index) {
         return _buildServiceCard(
-          item: _menuItems[index],
+          item: menuItems[index],
           index: index,
           scheme: scheme,
           isDark: isDark,

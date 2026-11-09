@@ -1,41 +1,50 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:oceanic/core/provider/core_provider.dart';
-import 'package:oceanic/features/Telemedicine/data/datasource/remote_datasource.dart';
+
+// Adjust these imports to match your project paths:
+import 'package:oceanic/core/network/api_client.dart'; // your ApiClient file
+import 'package:oceanic/features/Telemedicine/data/datasource/telemedicine_remote_data_source.dart';
 import 'package:oceanic/features/Telemedicine/data/repository/repository_impl.dart';
-import 'package:oceanic/features/Telemedicine/domain/repository/telemedicine_repository.dart';
-import 'package:oceanic/features/Telemedicine/domain/usecase/telemidicine_usecase.dart';
-import 'package:oceanic/features/Telemedicine/presentation/state/telemedicine_state.dart';
-import '../viewmodel/telemedicine_viewmodel.dart';
 
-// 1. Data Source
-final telemedicineRemoteDatasourceProvider =
+import 'package:oceanic/features/Telemedicine/domain/usecase/telemedicine_booking_usecase.dart';
+
+import 'package:oceanic/features/Telemedicine/presentation/viewmodel/telemedicine_viewmodel.dart';
+
+// 1. ApiClient Provider (or use your existing dio/api provider if you already have one)
+final telemedicineApiClientProvider = Provider<ApiClient>((ref) {
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: 'https://oceanic-mobile-backend-1.onrender.com',
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 15),
+    ),
+  );
+  return ApiClient(dio);
+});
+
+// 2. Remote DataSource Provider
+final telemedicineRemoteDataSourceProvider =
     Provider<TelemedicineRemoteDataSource>((ref) {
-  return TelemedicineRemoteDataSource(
-    ref.read(apiClientProvider),
-  );
+      final client = ref.watch(telemedicineApiClientProvider);
+      return TelemedicineRemoteDataSourceImpl(client);
+    });
+
+// 3. Repository Provider
+final telemedicineRepositoryProvider = Provider((ref) {
+  final remoteDataSource = ref.watch(telemedicineRemoteDataSourceProvider);
+  return TelemedicineRepositoryImpl(remoteDataSource);
 });
 
-// 2. Repository
-final telemedicineRepositoryProvider =
-    Provider<TelemedicineRepository>((ref) {
-  return TelemedicineRepositoryImpl(
-    ref.read(telemedicineRemoteDatasourceProvider),
-  );
+// 4. UseCase Provider
+final telemedicineUseCaseProvider = Provider<TelemedicineUseCase>((ref) {
+  final repository = ref.watch(telemedicineRepositoryProvider);
+  return TelemedicineUseCase(repository);
 });
 
-// 3. Single UseCase Provider
-final telemedicineUseCaseProvider =
-    Provider<TelemedicineUseCase>((ref) {
-  return TelemedicineUseCase(
-    ref.read(telemedicineRepositoryProvider),
-  );
-});
-
-// 4. View Model Provider
-final telemedicineProvider =
-    StateNotifierProvider<TelemedicineViewModel, TelemedicineState>((ref) {
-  return TelemedicineViewModel(
-    telemedicineUseCase: ref.read(telemedicineUseCaseProvider),
-  );
-});
+// 5. The ViewModel Provider used by CallNotificationService & screens
+final telemedicineViewModelProvider =
+    ChangeNotifierProvider<TelemedicineViewModel>((ref) {
+      final useCase = ref.watch(telemedicineUseCaseProvider);
+      return TelemedicineViewModel(useCase);
+    });

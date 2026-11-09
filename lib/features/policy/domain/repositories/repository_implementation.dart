@@ -1,33 +1,27 @@
-import 'package:oceanic/features/policy/data/datasource/policy_remote_datasource.dart';
+
 import 'package:oceanic/features/policy/data/models/dependant_model.dart';
 import 'package:oceanic/features/policy/data/models/member_card_model.dart';
 import 'package:oceanic/features/policy/data/models/policy_model.dart';
+import 'package:oceanic/features/policy/data/models/policy_overview.dart';
+
 import 'package:oceanic/features/policy/data/models/utilization_model.dart';
-import 'package:oceanic/features/policy/data/repositories/policy_respository.dart';
 
-class PolicyRepositoryImpl
-    implements PolicyRepository {
-  final PolicyRemoteDatasource datasource;
+abstract class PolicyRepository {
+  // Existing policy details
+  Future<PolicyModel> getPolicy();
 
-  PolicyRepositoryImpl(this.datasource);
+  // New comprehensive policy overview
+  Future<PolicyOverviewModel> getPolicyOverview();
 
-  @override
-  Future<PolicyModel> getPolicy() {
-    return datasource.getPolicy();
-  }
+  // New healthcare benefits
+  Future<PolicyBenefitsModel> getBenefits();
 
-  @override
-  Future<UtilizationModel> getUtilization() {
-    return datasource.getUtilization();
-  }
+  // Existing utilization
+  Future<UtilizationModel> getUtilization();
 
-  @override
-  Future<List<DependantModel>> getDependants() {
-    return datasource.getDependants();
-  }
+  // Existing dependants
+  Future<List<DependantModel>> getDependants();
 
-  @override
-  Future<MemberCardModel> getMemberCard() {
-    return datasource.getMemberCard();
-  }
+  // Existing digital member card
+  Future<MemberCardModel> getMemberCard();
 }

@@ -1,3 +1,4 @@
+
 class UtilizationModel {
   final int totalClaims;
   final int totalAuthorizations;
@@ -9,8 +10,15 @@ class UtilizationModel {
 
   factory UtilizationModel.fromJson(Map<String, dynamic> json) {
     return UtilizationModel(
-      totalClaims: json["totalClaims"],
-      totalAuthorizations: json["totalAuthorizations"],
+      totalClaims: _parseInt(json['totalClaims']),
+      totalAuthorizations: _parseInt(json['totalAuthorizations']),
     );
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+
+    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 }

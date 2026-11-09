@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-
 import 'package:oceanic/core/utils/utils.dart';
 import 'package:oceanic/features/auth/data/models/login_request.dart';
 import 'package:oceanic/features/auth/presentations/provider/auth_provider.dart';
 import 'package:oceanic/features/auth/presentations/screen/forgot_password.dart';
-import 'package:oceanic/features/doctor/dashboard/presentation/doctor_dashboard.dart';
+import 'package:oceanic/features/doctor/presentation/screens/doctor_dashboard_screen.dart';
+import 'package:oceanic/features/doctor/presentation/screens/doctor_shell_screen.dart';
 import 'package:oceanic/presentation/widgets/background_image.dart';
 import 'package:oceanic/presentation/widgets/bottom_nav_bar.dart';
 
@@ -63,9 +63,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => isDoctor
-            ? const DoctorDashboardScreen()
-            : const CustomBottomNavBar(),
+        builder: (_) =>
+            isDoctor ? DoctorShellScreen() : const CustomBottomNavBar(),
       ),
     );
   }

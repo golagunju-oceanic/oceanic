@@ -1,152 +1,250 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
-import 'package:oceanic/features/Telemedicine/domain/usecase/telemidicine_usecase.dart';
+import 'package:oceanic/features/Telemedicine/domain/usecase/telemedicine_booking_usecase.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../state/telemedicine_state.dart';
 
-class TelemedicineViewModel extends StateNotifier<TelemedicineState> {
-  final TelemedicineUseCase telemedicineUseCase;
-  RtcEngine? engine;
+class TelemedicineViewModel extends ChangeNotifier {
+  final TelemedicineUseCase _useCase;
 
-  TelemedicineViewModel({
-    required this.telemedicineUseCase
-  }) : super(TelemedicineState.initial());
+  TelemedicineViewModel(this._useCase);
 
-  /// 1. Outgoing call started by Enrollee/Patient
-  Future<void> startOutgoingCall({
-    required String doctorId,
+  TelemedicineState _state = TelemedicineState();
+  TelemedicineState get state => _state;
+
+  RtcEngine? _engine;
+  RtcEngine? get engine => _engine;
+
+  Timer? _pollingTimer;
+
+  /// Patient starts ringing the doctor for a booked appointment
+  Future<void> initiatePatientCall({
+    required String appointmentId,
     required bool isVideo,
   }) async {
-    state = state.copyWith(isLoading: true, error: null);
-
-    try {
-      // Step A: Request permissions
-      await [Permission.microphone, if (isVideo) Permission.camera].request();
-
-      // Step B: Call backend to get channel, UID, and token
-      final response = await telemedicineUseCase.initiateCall(
-        doctorId: doctorId,
-        callType: isVideo ? 'video' : 'audio',
-      );
-
-      // Step C: Initialize Agora engine & join
-      await _initAgoraAndJoin(
-        appId: response.appId,
-        channel: response.channel,
-        token: response.token,
-        uid: response.uid, // Use EXACT UID from backend
-        isVideo: isVideo,
-      );
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-    }
-  }
-
-  /// 2. Joining an existing channel (e.g. Doctor answering)
-  Future<void> joinExistingCall({
-    required String channel,
-    required bool isVideo,
-  }) async {
-    state = state.copyWith(isLoading: true, error: null);
-
-    try {
-      await [Permission.microphone, if (isVideo) Permission.camera].request();
-
-      final response = await telemedicineUseCase.generateToken(channel: channel);
-
-      await _initAgoraAndJoin(
-        appId: response.appId,
-        channel: response.channel,
-        token: response.token,
-        uid: response.uid,
-        isVideo: isVideo,
-      );
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-    }
-  }
-
-  Future<void> _initAgoraAndJoin({
-    required String appId,
-    required String channel,
-    required String token,
-    required int uid,
-    required bool isVideo,
-  }) async {
-    engine = createAgoraRtcEngine();
-    await engine!.initialize(
-      RtcEngineContext(
-        appId: appId,
-        channelProfile: ChannelProfileType.channelProfileCommunication,
+    _updateState(
+      _state.copyWith(
+        status: TelemedicineCallStatus.ringing,
+        statusMessage: 'Ringing doctor...',
       ),
     );
 
-    _setupEventHandlers();
+    try {
+      final session = await _useCase.ring(appointmentId);
+      _updateState(_state.copyWith(callId: session.callId));
 
-    if (isVideo) {
-      await engine!.enableVideo();
-      await engine!.startPreview();
-    } else {
-      await engine!.enableAudio();
+      if (session.status == 'ACCEPTED') {
+        await _connectAgora(session.callId, isVideo);
+      } else {
+        _pollCallAcceptance(session.callId, isVideo);
+      }
+    } catch (e) {
+      _setError(e.toString());
     }
-
-    // Join channel using Agora 6.x options
-    await engine!.joinChannel(
-      token: token,
-      channelId: channel,
-      uid: uid,
-      options: ChannelMediaOptions(
-        clientRoleType: ClientRoleType.clientRoleBroadcaster,
-        channelProfile: ChannelProfileType.channelProfileCommunication,
-        publishCameraTrack: isVideo,
-        publishMicrophoneTrack: true,
-        autoSubscribeAudio: true,
-        autoSubscribeVideo: isVideo,
-      ),
-    );
   }
 
-  void _setupEventHandlers() {
-    engine?.registerEventHandler(
+  /// Doctor answers or direct join when accepted
+  Future<void> answerAndJoin({
+    required String callId,
+    required bool isVideo,
+    bool isDoctor = false,
+  }) async {
+    _updateState(
+      _state.copyWith(
+        callId: callId,
+        status: TelemedicineCallStatus.connecting,
+        statusMessage: 'Connecting...',
+      ),
+    );
+
+    try {
+      if (isDoctor) {
+        await _useCase.answer(callId, accept: true);
+      }
+      await _connectAgora(callId, isVideo);
+    } catch (e) {
+      _setError(e.toString());
+    }
+  }
+
+  void _pollCallAcceptance(String callId, bool isVideo) {
+    int attempts = 0;
+    _pollingTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
+      attempts++;
+      if (attempts > 22) {
+        // 45 seconds timeout
+        timer.cancel();
+        _setError('No answer from doctor. Please try again.');
+        return;
+      }
+
+      try {
+        final current = await _useCase.getStatus(callId);
+        if (current.status == 'ACCEPTED') {
+          timer.cancel();
+          await _connectAgora(callId, isVideo);
+        } else if (current.status == 'DECLINED' || current.status == 'MISSED') {
+          timer.cancel();
+          _setError('Doctor is currently unavailable.');
+        }
+      } catch (e) {
+        timer.cancel();
+        _setError('Connection lost while ringing.');
+      }
+    });
+  }
+
+  Future<void> _connectAgora(String callId, bool isVideo) async {
+    _updateState(
+      _state.copyWith(
+        status: TelemedicineCallStatus.connecting,
+        statusMessage: 'Entering room...',
+      ),
+    );
+
+    // Request permissions
+    await [Permission.microphone, if (isVideo) Permission.camera].request();
+
+    try {
+      final creds = await _useCase.join(callId);
+
+      _engine = createAgoraRtcEngine();
+      await _engine!.initialize(
+        RtcEngineContext(
+          appId: creds.appId,
+          channelProfile: ChannelProfileType.channelProfileCommunication,
+        ),
+      );
+
+      _registerAgoraEvents();
+
+      if (creds.isVideo) {
+        await _engine!.enableVideo();
+        await _engine!.startPreview();
+      } else {
+        await _engine!.enableAudio();
+      }
+
+      // CRITICAL: Must use creds.uid (1001 for doctor, 2001 for patient)
+      await _engine!.joinChannel(
+        token: creds.token,
+        channelId: creds.channel,
+        uid: creds.uid,
+        options: ChannelMediaOptions(
+          clientRoleType: ClientRoleType.clientRoleBroadcaster,
+          channelProfile: ChannelProfileType.channelProfileCommunication,
+          publishCameraTrack: creds.isVideo,
+          publishMicrophoneTrack: true,
+          autoSubscribeAudio: true,
+          autoSubscribeVideo: creds.isVideo,
+        ),
+      );
+    } catch (e) {
+      _setError('Failed to connect Agora: $e');
+    }
+  }
+
+  void _registerAgoraEvents() {
+    _engine?.registerEventHandler(
       RtcEngineEventHandler(
         onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
-          state = state.copyWith(localUserJoined: true, isLoading: false);
+          _updateState(
+            _state.copyWith(
+              status: TelemedicineCallStatus.connected,
+              isJoined: true,
+              statusMessage: 'Connected. Waiting for other party...',
+            ),
+          );
         },
         onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
-          state = state.copyWith(remoteUid: remoteUid);
+          _updateState(
+            _state.copyWith(
+              remoteUid: remoteUid,
+              statusMessage: 'In consultation',
+            ),
+          );
         },
-        onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
-          state = state.copyWith(remoteUid: null);
-        },
+        onUserOffline:
+            (
+              RtcConnection connection,
+              int remoteUid,
+              UserOfflineReasonType reason,
+            ) {
+              _updateState(
+                _state.copyWith(
+                  remoteUid: null,
+                  statusMessage: 'The other party disconnected',
+                ),
+              );
+            },
         onError: (ErrorCodeType err, String msg) {
-          state = state.copyWith(error: "Agora error [$err]: $msg");
+          debugPrint('Agora Error: $err - $msg');
+          if (err == ErrorCodeType.errInvalidToken ||
+              err == ErrorCodeType.errTokenExpired) {
+            _setError('Session token invalid or expired.');
+          }
         },
       ),
     );
   }
 
-  void toggleMicrophone() async {
-    final nextState = !state.microphoneEnabled;
-    await engine?.muteLocalAudioStream(!nextState);
-    state = state.copyWith(microphoneEnabled: nextState);
+  void toggleMute() {
+    final newMute = !_state.isMuted;
+    _engine?.muteLocalAudioStream(newMute);
+    _updateState(_state.copyWith(isMuted: newMute));
   }
 
-  void toggleCamera() async {
-    final nextState = !state.cameraEnabled;
-    await engine?.muteLocalVideoStream(!nextState);
-    state = state.copyWith(cameraEnabled: nextState);
+  void toggleVideo() {
+    final newVideoDisabled = !_state.isVideoDisabled;
+    _engine?.muteLocalVideoStream(newVideoDisabled);
+    _updateState(_state.copyWith(isVideoDisabled: newVideoDisabled));
   }
 
-  void switchCamera() async {
-    await engine?.switchCamera();
+  Future<void> endCall() async {
+    _pollingTimer?.cancel();
+    if (_state.callId != null) {
+      try {
+        await _useCase.end(_state.callId!);
+      } catch (_) {}
+    }
+    await _disposeAgora();
+    _updateState(
+      _state.copyWith(
+        status: TelemedicineCallStatus.callEnded,
+        statusMessage: 'Call ended',
+      ),
+    );
   }
 
-  Future<void> leaveConsultation() async {
-    await engine?.leaveChannel();
-    await engine?.release();
-    engine = null;
-    state = TelemedicineState.initial();
+  Future<void> _disposeAgora() async {
+    try {
+      await _engine?.leaveChannel();
+      await _engine?.release();
+    } catch (_) {}
+    _engine = null;
+  }
+
+  void _updateState(TelemedicineState newState) {
+    _state = newState;
+    notifyListeners();
+  }
+
+  void _setError(String msg) {
+    _updateState(
+      _state.copyWith(
+        status: TelemedicineCallStatus.error,
+        errorMessage: msg,
+        statusMessage: msg,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    _disposeAgora();
+    super.dispose();
   }
 }

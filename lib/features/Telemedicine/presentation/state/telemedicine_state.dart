@@ -1,53 +1,52 @@
-class TelemedicineState {
-  final bool isLoading;
-  final String? error;
-  final bool localUserJoined;
-  final int? remoteUid;
-  final bool microphoneEnabled;
-  final bool cameraEnabled;
-  final String? channel;
+enum TelemedicineCallStatus {
+  idle,
+  ringing,
+  connecting,
+  connected,
+  callEnded,
+  error,
+}
 
-  const TelemedicineState({
-    required this.isLoading,
-    this.error,
-    required this.localUserJoined,
+class TelemedicineState {
+  final TelemedicineCallStatus status;
+  final String statusMessage;
+  final String? errorMessage;
+  final String? callId;
+  final int? remoteUid;
+  final bool isMuted;
+  final bool isVideoDisabled;
+  final bool isJoined;
+
+  TelemedicineState({
+    this.status = TelemedicineCallStatus.idle,
+    this.statusMessage = '',
+    this.errorMessage,
+    this.callId,
     this.remoteUid,
-    required this.microphoneEnabled,
-    required this.cameraEnabled,
-    this.channel,
+    this.isMuted = false,
+    this.isVideoDisabled = false,
+    this.isJoined = false,
   });
 
-  /// Initial state when entering the screen
-  factory TelemedicineState.initial() {
-    return const TelemedicineState(
-      isLoading: false,
-      error: null,
-      localUserJoined: false,
-      remoteUid: null,
-      microphoneEnabled: true,
-      cameraEnabled: true,
-      channel: null,
-    );
-  }
-
-  /// Copy helper to update state immutably
   TelemedicineState copyWith({
-    bool? isLoading,
-    String? error,
-    bool? localUserJoined,
+    TelemedicineCallStatus? status,
+    String? statusMessage,
+    String? errorMessage,
+    String? callId,
     int? remoteUid,
-    bool? microphoneEnabled,
-    bool? cameraEnabled,
-    String? channel,
+    bool? isMuted,
+    bool? isVideoDisabled,
+    bool? isJoined,
   }) {
     return TelemedicineState(
-      isLoading: isLoading ?? this.isLoading,
-      error: error,
-      localUserJoined: localUserJoined ?? this.localUserJoined,
+      status: status ?? this.status,
+      statusMessage: statusMessage ?? this.statusMessage,
+      errorMessage: errorMessage,
+      callId: callId ?? this.callId,
       remoteUid: remoteUid ?? this.remoteUid,
-      microphoneEnabled: microphoneEnabled ?? this.microphoneEnabled,
-      cameraEnabled: cameraEnabled ?? this.cameraEnabled,
-      channel: channel ?? this.channel,
+      isMuted: isMuted ?? this.isMuted,
+      isVideoDisabled: isVideoDisabled ?? this.isVideoDisabled,
+      isJoined: isJoined ?? this.isJoined,
     );
   }
 }

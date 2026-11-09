@@ -51,12 +51,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBRh50PORKg7bnyJs7Ny3xqpS6RujL-FJ8',
-    appId: '1:151141982970:android:6aaf2c256eeacde9ee9f43',
+    appId: '1:151141982970:android:adc40a38402cf4acee9f43',
     messagingSenderId: '151141982970',
     projectId: 'oceanic-test-77f80',
     storageBucket: 'oceanic-test-77f80.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyBOVCmyOgWGZURfn4fXRkxRQbKcjz3EotE',
     appId: '1:151141982970:ios:039852517a2c7400ee9f43',
@@ -65,7 +64,6 @@ class DefaultFirebaseOptions {
     storageBucket: 'oceanic-test-77f80.firebasestorage.app',
     iosBundleId: 'com.oceanichealth.oceanic',
   );
-
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyBOVCmyOgWGZURfn4fXRkxRQbKcjz3EotE',
     appId: '1:151141982970:ios:039852517a2c7400ee9f43',
